@@ -1,6 +1,6 @@
 //fala com o back
 
-const API_URL = "http://localhost:8080/tasks";
+const API_URL = "https://flowboard-backend-qnut.onrender.com/tasks";
 
 async function getTasks() {
     const response = await fetch(API_URL);
