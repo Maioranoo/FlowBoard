@@ -1,4 +1,4 @@
-# 🚀 FlowBoard
+# FlowBoard
 
 Sistema Full Stack para gerenciamento inteligente de tarefas, desenvolvido como desafio técnico para a XCL.
 
@@ -6,7 +6,7 @@ O FlowBoard permite criar, editar, excluir e acompanhar tarefas de forma simples
 
 ---
 
-## 🌐 Projeto Online
+## Projeto Online
 
 **Frontend:** [https://SEU-LINK-VERCEL.vercel.app](https://flow-board-lovat.vercel.app/)
 
@@ -14,7 +14,7 @@ O FlowBoard permite criar, editar, excluir e acompanhar tarefas de forma simples
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 - ✅ Cadastro de tarefas
 - ✅ Edição de tarefas
@@ -31,7 +31,7 @@ O FlowBoard permite criar, editar, excluir e acompanhar tarefas de forma simples
 
 ---
 
-## 🛠 Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 ### Frontend
 
@@ -60,7 +60,7 @@ O FlowBoard permite criar, editar, excluir e acompanhar tarefas de forma simples
 
 ---
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 FlowBoard
@@ -81,7 +81,7 @@ FlowBoard
 
 ---
 
-## ⚙️ Como executar localmente
+## Como executar localmente
 
 ### Backend
 
@@ -111,7 +111,7 @@ ou utilize a extensão Live Server do VS Code.
 
 ---
 
-## 💾 Banco de Dados
+## Banco de Dados
 
 O sistema utiliza PostgreSQL.
 
@@ -124,13 +124,13 @@ application.properties
 com as credenciais do banco.
 
 ---
-## 🎯 Objetivo
+## Objetivo
 
 O FlowBoard foi desenvolvido como solução para gerenciamento de tarefas, buscando oferecer uma experiência simples, intuitiva e moderna, utilizando uma arquitetura Full Stack baseada em Java Spring Boot no backend e JavaScript puro no frontend.
 
 ---
 
-## 👨‍💻 Desenvolvedor
+## Desenvolvedor
 
 João Pedro Maiorano
 
