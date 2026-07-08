@@ -124,19 +124,6 @@ application.properties
 com as credenciais do banco.
 
 ---
-
-## 📷 Interface
-
-### Dashboard
-
-> *(adicione um print da aplicação aqui)*
-
-### Cadastro de tarefas
-
-> *(adicione outro print)*
-
----
-
 ## 🎯 Objetivo
 
 O FlowBoard foi desenvolvido como solução para gerenciamento de tarefas, buscando oferecer uma experiência simples, intuitiva e moderna, utilizando uma arquitetura Full Stack baseada em Java Spring Boot no backend e JavaScript puro no frontend.
