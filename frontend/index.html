@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowBoard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <header class="hero">
+        <div>
+            <span class="badge">Escolhas inteligentes para problemas reais</span>
+            <h1>FlowBoard</h1>
+            <p>Transforme tarefas em resultados.</p>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="flow-ai-card">
+            <div class="ai-icon">🤖</div>
+
+            <div class="ai-content">
+                <span class="section-label">Flow AI</span>
+                <h2>Bem-vindo ao seu painel de produtividade.</h2>
+                <p id="ai-message">
+                    Organize suas tarefas, acompanhe seu progresso e mantenha o foco no que importa.
+                </p>
+            </div>
+
+            <button id="open-modal-btn" class="primary-btn">
+                + Nova tarefa
+            </button>
+        </section>
+
+        <section class="dashboard-grid">
+            <div class="stat-card">
+                <span>Total</span>
+                <strong id="total-tasks">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Concluídas</span>
+                <strong id="completed-tasks">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>Em andamento</span>
+                <strong id="pending-tasks">0</strong>
+            </div>
+
+            <div class="stat-card highlight productivity-card">
+                <span>Produtividade</span>
+                <strong id="productivity">0%</strong>
+
+                <div class="progress-bar">
+                    <div id="productivity-bar" class="progress-fill"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="task-section">
+            <div class="section-header">
+                <div>
+                    <span class="section-label">Tarefas</span>
+                    <h2>Suas atividades</h2>
+                </div>
+
+                <div class="filters">
+                    <button class="filter-btn active">Todas</button>
+                    <button class="filter-btn">Pendentes</button>
+                    <button class="filter-btn">Concluídas</button>
+                </div>
+            </div>
+
+            <div id="task-list" class="task-list">
+                
+            </div>
+        </section>
+
+    </main>
+
+    <div id="task-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Nova tarefa</h2>
+
+            <form id="task-form">
+                <label>Título</label>
+                <input type="text" id="title" placeholder="Ex: Finalizar projeto XCL">
+
+                <label>Descrição</label>
+                <textarea id="description" placeholder="Descreva sua tarefa"></textarea>
+
+                <label>Prioridade</label>
+                <select id="priority">
+                    <option value="LOW">Baixa</option>
+                    <option value="MEDIUM">Média</option>
+                    <option value="HIGH">Alta</option>
+                </select>
+
+                <label>Categoria</label>
+                <select id="category">
+                    <option value="WORK">Trabalho</option>
+                    <option value="STUDY">Estudos</option>
+                    <option value="PERSONAL">Pessoal</option>
+                    <option value="HEALTH">Saúde</option>
+                </select>
+
+                <div class="modal-actions">
+                    <button type="button" id="close-modal-btn" class="secondary-btn">Cancelar</button>
+                    <button type="submit" class="primary-btn">Salvar tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal delete-modal">
+            <h2>Excluir tarefa?</h2>
+            <p>Essa ação não poderá ser desfeita.</p>
+
+            <div class="modal-actions">
+                <button type="button" id="cancel-delete-btn" class="secondary-btn">Cancelar</button>
+                <button type="button" id="confirm-delete-btn" class="danger-btn">Excluir</button>
+             </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/flowai.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/script.js"></script>
+
+    <script>
+        lucide.createIcons();//os icones bonitos
+    </script>
+</html>
