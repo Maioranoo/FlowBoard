@@ -73,7 +73,20 @@ public class AnthropicTaskAiAssistant implements TaskAiAssistant {
                 .body(JsonNode.class);
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
-        TaskAiSuggestion suggestion = parseResponse(response);
+        TaskAiSuggestion suggestion;
+        try {
+            suggestion = parseResponse(response);
+        } catch (InvalidAiResponseException e) {
+            // Diagnóstico: quando a resposta é rejeitada, registra o que o modelo devolveu
+            // (só o conteúdo gerado, nunca a chave), para dar para descobrir o porquê.
+            log.warn("FlowAI: resposta rejeitada em {} ms (stop_reason={}, tokens entrada={}, saída={}). Conteúdo: {}",
+                    elapsedMs,
+                    response == null ? null : response.path("stop_reason").asText(),
+                    response == null ? -1 : response.path("usage").path("input_tokens").asInt(-1),
+                    response == null ? -1 : response.path("usage").path("output_tokens").asInt(-1),
+                    describeContent(response));
+            throw e;
+        }
 
         log.info("FlowAI: sugestão gerada por {} em {} ms (tokens entrada={}, saída={})",
                 properties.model(), elapsedMs,
@@ -158,6 +171,24 @@ public class AnthropicTaskAiAssistant implements TaskAiAssistant {
 
     private static List<String> enumNames(Enum<?>[] values) {
         return Arrays.stream(values).map(Enum::name).toList();
+    }
+
+    /** Resume os blocos de conteúdo da resposta em uma linha curta: tipo de cada bloco e o texto (truncado). */
+    private static String describeContent(JsonNode response) {
+        if (response == null) {
+            return "<sem resposta>";
+        }
+        StringBuilder out = new StringBuilder();
+        for (JsonNode block : response.path("content")) {
+            String type = block.path("type").asText();
+            out.append('[').append(type);
+            if ("text".equals(type)) {
+                out.append(": ").append(block.path("text").asText());
+            }
+            out.append("] ");
+        }
+        String oneLine = out.toString().replaceAll("\\s+", " ").strip();
+        return oneLine.length() > 800 ? oneLine.substring(0, 800) + "…" : oneLine;
     }
 
     private static String nullToEmpty(String value) {
