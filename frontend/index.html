@@ -39,27 +39,25 @@
         <section class="overview" aria-labelledby="overview-title">
             <div class="overview-text">
                 <h2 id="overview-title">Seu progresso</h2>
-                <p id="summary-message">
-                    Organize suas tarefas, acompanhe seu progresso e mantenha o foco no que importa.
-                </p>
+                <p id="summary-message">Conectando ao servidor…</p>
             </div>
 
             <dl class="stats">
                 <div class="stat">
                     <dt>Total</dt>
-                    <dd id="total-tasks">0</dd>
+                    <dd id="total-tasks">–</dd>
                 </div>
                 <div class="stat">
                     <dt>Concluídas</dt>
-                    <dd id="completed-tasks">0</dd>
+                    <dd id="completed-tasks">–</dd>
                 </div>
                 <div class="stat">
                     <dt>Em andamento</dt>
-                    <dd id="pending-tasks">0</dd>
+                    <dd id="pending-tasks">–</dd>
                 </div>
                 <div class="stat stat-progress">
                     <dt>Produtividade</dt>
-                    <dd id="productivity">0%</dd>
+                    <dd id="productivity">–</dd>
                     <div class="progress-bar" aria-hidden="true">
                         <div id="productivity-bar" class="progress-fill"></div>
                     </div>
@@ -78,8 +76,14 @@
                 </div>
             </div>
 
-            <div id="task-list" class="task-list" aria-live="polite">
-
+            <div id="task-list" class="task-list" aria-live="polite" aria-busy="true">
+                <div class="empty-state">
+                    <h3>Carregando tarefas…</h3>
+                    <p id="slow-hint" hidden>
+                        O servidor gratuito entra em repouso quando fica sem uso.
+                        A primeira resposta pode levar até 1 minuto; as seguintes são rápidas.
+                    </p>
+                </div>
             </div>
         </section>
 

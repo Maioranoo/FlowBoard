@@ -97,7 +97,16 @@ aiFillBtn.addEventListener("click", async () => {
     }
 });
 
+// Se a primeira carga demorar, explica o motivo (servidor gratuito "acordando").
+const SLOW_LOAD_HINT_MS = 4000;
+
 async function loadTasks() {
+    const taskList = document.getElementById("task-list");
+    const slowHintTimer = setTimeout(() => {
+        const hint = document.getElementById("slow-hint");
+        if (hint) hint.hidden = false;
+    }, SLOW_LOAD_HINT_MS);
+
     try {
         currentTasks = await getTasks();
         refreshView();
@@ -105,7 +114,16 @@ async function loadTasks() {
     } catch (error) {
         console.error("Erro ao carregar tarefas:", error);
         document.getElementById("summary-message").textContent =
-            "Não consegui conectar com o servidor. Verifique se o back-end está rodando.";
+            "Não consegui conectar com o servidor.";
+        taskList.innerHTML = `
+            <div class="empty-state">
+                <h3>Não foi possível carregar as tarefas</h3>
+                <p>Verifique sua conexão e recarregue a página.</p>
+            </div>
+        `;
+    } finally {
+        clearTimeout(slowHintTimer);
+        taskList.setAttribute("aria-busy", "false");
     }
 }
 

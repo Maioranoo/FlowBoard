@@ -516,6 +516,11 @@ svg.lucide {
     color: var(--text-muted);
 }
 
+.empty-state p {
+    max-width: 52ch;
+    margin-inline: auto;
+}
+
 .empty-state h3 {
     margin-bottom: 4px;
     color: var(--text);
