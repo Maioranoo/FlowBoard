@@ -37,11 +37,11 @@ taskForm.addEventListener("submit", async (event) => {
 
         upsertTask(saved);
         closeModal();
-        showToast("✅ Tarefa salva com sucesso!");
+        showToast("Tarefa salva.");
         watchSuggestion(saved);
     } catch (error) {
         console.error("Erro ao salvar tarefa:", error);
-        showToast(`❌ ${validationMessage(error) ?? "Não foi possível salvar. Tente novamente."}`);
+        showToast(validationMessage(error) ?? "Não foi possível salvar. Tente novamente.", "error");
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalLabel;
@@ -225,10 +225,10 @@ async function handleToggleStatus(id) {
     try {
         const updated = await toggleTaskStatus(id);
         upsertTask(updated);
-        showToast("🎉 Tarefa atualizada!");
+        showToast(updated.status === "COMPLETED" ? "Tarefa concluída." : "Tarefa reaberta.");
     } catch (error) {
         console.error("Erro ao atualizar status:", error);
-        showToast("❌ Não foi possível atualizar a tarefa.");
+        showToast("Não foi possível atualizar a tarefa.", "error");
     }
 }
 
@@ -251,10 +251,10 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     try {
         await deleteTaskById(id);
         removeTask(id);
-        showToast("🗑️ Tarefa removida!");
+        showToast("Tarefa excluída.");
     } catch (error) {
         console.error("Erro ao excluir tarefa:", error);
-        showToast("❌ Não foi possível excluir a tarefa.");
+        showToast("Não foi possível excluir a tarefa.", "error");
     }
 });
 

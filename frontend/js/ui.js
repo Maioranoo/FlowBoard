@@ -172,12 +172,7 @@ function renderTasks(tasks) {
     taskList.innerHTML = "";
 
     if (tasks.length === 0) {
-        taskList.innerHTML = `
-            <div class="empty-state">
-                <h3>🎉 Tudo em dia!</h3>
-                <p>Parabéns por concluir suas metas. Que tal planejar o próximo objetivo?</p>
-            </div>
-        `;
+        taskList.innerHTML = renderEmptyState();
         return;
     }
 
@@ -226,13 +221,43 @@ function renderTasks(tasks) {
     lucide.createIcons();
 }
 
-function showToast(message) {
+// A mensagem da lista vazia depende do motivo: não existir tarefa nenhuma é diferente de
+// o filtro atual não ter resultados. (Antes dizia "Parabéns por concluir suas metas" até
+// para quem ainda não tinha criado nada.)
+function renderEmptyState() {
+    const allTasks = typeof currentTasks !== "undefined" ? currentTasks : [];
+    const pending = allTasks.filter(task => !isCompleted(task)).length;
+
+    let title = "Nenhuma tarefa ainda";
+    let text = "Crie a primeira em “Nova tarefa”. Você pode descrever com suas palavras e deixar a IA preencher os campos.";
+
+    if (allTasks.length > 0 && currentFilter === "PENDING") {
+        title = "Nada pendente";
+        text = "Todas as tarefas estão concluídas.";
+    } else if (allTasks.length > 0 && currentFilter === "COMPLETED") {
+        title = "Nenhuma tarefa concluída";
+        text = `Você tem ${pending} ${pending === 1 ? "tarefa pendente" : "tarefas pendentes"}.`;
+    }
+
+    return `
+        <div class="empty-state">
+            <h3>${title}</h3>
+            <p>${text}</p>
+        </div>
+    `;
+}
+
+let toastTimer = null;
+
+// kind: "" (padrão) ou "error"
+function showToast(message, kind = "") {
     const toast = document.getElementById("toast");
 
     toast.textContent = message;
-    toast.classList.add("show");
+    toast.className = `toast show ${kind}`;
 
-    setTimeout(() => {
+    clearTimeout(toastTimer); // um aviso novo não some antes da hora por causa do anterior
+    toastTimer = setTimeout(() => {
         toast.classList.remove("show");
     }, 2500);
 }

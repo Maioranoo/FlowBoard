@@ -4,125 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlowBoard</title>
+    <meta name="description" content="Gerenciador de tarefas com sugestões geradas por IA.">
+    <meta name="color-scheme" content="dark">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Versão fixa: "@latest" pode mudar (e quebrar) sem aviso. -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
-    <header class="hero">
-        <div>
-            <span class="badge">Escolhas inteligentes para problemas reais</span>
-            <h1>FlowBoard</h1>
-            <p>Transforme tarefas em resultados.</p>
+    <header class="app-header">
+        <div class="app-header-inner">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <div>
+                    <h1>FlowBoard</h1>
+                    <p>Transforme tarefas em resultados.</p>
+                </div>
+            </div>
+
+            <button id="open-modal-btn" class="primary-btn">
+                <i data-lucide="plus" aria-hidden="true"></i>
+                Nova tarefa
+            </button>
         </div>
     </header>
 
     <main class="container">
 
-        <section class="summary-card">
-            <div class="summary-icon">📊</div>
-
-            <div class="summary-content">
-                <span class="section-label">Resumo de produtividade</span>
-                <h2>Bem-vindo ao seu painel de produtividade.</h2>
+        <section class="overview" aria-labelledby="overview-title">
+            <div class="overview-text">
+                <h2 id="overview-title">Seu progresso</h2>
                 <p id="summary-message">
                     Organize suas tarefas, acompanhe seu progresso e mantenha o foco no que importa.
                 </p>
             </div>
 
-            <button id="open-modal-btn" class="primary-btn">
-                + Nova tarefa
-            </button>
-        </section>
-
-        <section class="dashboard-grid">
-            <div class="stat-card">
-                <span>Total</span>
-                <strong id="total-tasks">0</strong>
-            </div>
-
-            <div class="stat-card">
-                <span>Concluídas</span>
-                <strong id="completed-tasks">0</strong>
-            </div>
-
-            <div class="stat-card">
-                <span>Em andamento</span>
-                <strong id="pending-tasks">0</strong>
-            </div>
-
-            <div class="stat-card highlight productivity-card">
-                <span>Produtividade</span>
-                <strong id="productivity">0%</strong>
-
-                <div class="progress-bar">
-                    <div id="productivity-bar" class="progress-fill"></div>
+            <dl class="stats">
+                <div class="stat">
+                    <dt>Total</dt>
+                    <dd id="total-tasks">0</dd>
                 </div>
-            </div>
+                <div class="stat">
+                    <dt>Concluídas</dt>
+                    <dd id="completed-tasks">0</dd>
+                </div>
+                <div class="stat">
+                    <dt>Em andamento</dt>
+                    <dd id="pending-tasks">0</dd>
+                </div>
+                <div class="stat stat-progress">
+                    <dt>Produtividade</dt>
+                    <dd id="productivity">0%</dd>
+                    <div class="progress-bar" aria-hidden="true">
+                        <div id="productivity-bar" class="progress-fill"></div>
+                    </div>
+                </div>
+            </dl>
         </section>
 
-        <section class="task-section">
+        <section class="task-section" aria-labelledby="tasks-title">
             <div class="section-header">
-                <div>
-                    <span class="section-label">Tarefas</span>
-                    <h2>Suas atividades</h2>
-                </div>
+                <h2 id="tasks-title">Suas atividades</h2>
 
-                <div class="filters">
+                <div class="filters" role="group" aria-label="Filtrar tarefas">
                     <button class="filter-btn active">Todas</button>
                     <button class="filter-btn">Pendentes</button>
                     <button class="filter-btn">Concluídas</button>
                 </div>
             </div>
 
-            <div id="task-list" class="task-list">
-                
+            <div id="task-list" class="task-list" aria-live="polite">
+
             </div>
         </section>
 
     </main>
 
     <div id="task-modal" class="modal-overlay">
-        <div class="modal">
-            <h2>Nova tarefa</h2>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+            <h2 id="task-modal-title">Nova tarefa</h2>
 
             <form id="task-form">
                 <!-- Criação por linguagem natural: preenche os campos abaixo para revisão, não salva. -->
                 <div id="ai-fill" class="ai-fill">
-                    <label for="ai-text">Descreva a tarefa</label>
+                    <label for="ai-text">Descreva a tarefa com suas palavras</label>
                     <textarea id="ai-text" maxlength="500"
                         placeholder="Ex: estudar árvores AVL pra prova de estrutura de dados quinta, urgente"></textarea>
                     <button type="button" id="ai-fill-btn" class="secondary-btn">Preencher com IA</button>
                     <p id="ai-fill-status" class="ai-fill-status" aria-live="polite"></p>
                 </div>
 
-                <label>Título</label>
+                <label for="title">Título</label>
                 <input type="text" id="title" placeholder="Ex: Finalizar projeto XCL" required maxlength="255">
 
-                <label>Descrição</label>
+                <label for="description">Descrição</label>
                 <textarea id="description" placeholder="Descreva sua tarefa" maxlength="255"></textarea>
 
-                <label>Prioridade</label>
-                <select id="priority">
-                    <option value="LOW">Baixa</option>
-                    <option value="MEDIUM">Média</option>
-                    <option value="HIGH">Alta</option>
-                </select>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="priority">Prioridade</label>
+                        <select id="priority">
+                            <option value="LOW">Baixa</option>
+                            <option value="MEDIUM">Média</option>
+                            <option value="HIGH">Alta</option>
+                        </select>
+                    </div>
 
-                <label>Categoria</label>
-                <select id="category">
-                    <option value="WORK">Trabalho</option>
-                    <option value="STUDY">Estudos</option>
-                    <option value="PERSONAL">Pessoal</option>
-                    <option value="HEALTH">Saúde</option>
-                    <option value="HOME">Casa</option>
-                    <option value="FINANCE">Finanças</option>
-                </select>
+                    <div class="field">
+                        <label for="category">Categoria</label>
+                        <select id="category">
+                            <option value="WORK">Trabalho</option>
+                            <option value="STUDY">Estudos</option>
+                            <option value="PERSONAL">Pessoal</option>
+                            <option value="HEALTH">Saúde</option>
+                            <option value="HOME">Casa</option>
+                            <option value="FINANCE">Finanças</option>
+                        </select>
+                    </div>
+                </div>
 
                 <label for="dueDate">Prazo (opcional)</label>
                 <input type="date" id="dueDate">
@@ -136,18 +140,18 @@
     </div>
 
     <div id="delete-modal" class="modal-overlay">
-        <div class="modal delete-modal">
-            <h2>Excluir tarefa?</h2>
+        <div class="modal delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-modal-title">
+            <h2 id="delete-modal-title">Excluir tarefa?</h2>
             <p>Essa ação não poderá ser desfeita.</p>
 
             <div class="modal-actions">
                 <button type="button" id="cancel-delete-btn" class="secondary-btn">Cancelar</button>
                 <button type="button" id="confirm-delete-btn" class="danger-btn">Excluir</button>
-             </div>
+            </div>
         </div>
     </div>
-    
-    <div id="toast" class="toast"></div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="js/api.js"></script>
     <script src="js/dashboard.js"></script>
@@ -156,6 +160,7 @@
     <script src="js/script.js"></script>
 
     <script>
-        lucide.createIcons();//os icones bonitos
+        lucide.createIcons();
     </script>
+</body>
 </html>
