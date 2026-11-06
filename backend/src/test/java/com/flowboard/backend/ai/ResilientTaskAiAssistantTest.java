@@ -26,7 +26,7 @@ class ResilientTaskAiAssistantTest {
         when(primary.suggest(any(), any(), any())).thenReturn(aiSuggestion);
 
         TaskAiSuggestion result = new ResilientTaskAiAssistant(primary, fallback, true)
-                .suggest("Estudar", null, "LOW");
+                .suggest("Estudar", null, Priority.LOW);
 
         assertThat(result).isEqualTo(aiSuggestion);
     }
@@ -36,7 +36,7 @@ class ResilientTaskAiAssistantTest {
         when(primary.suggest(any(), any(), any())).thenThrow(new ResourceAccessException("timeout"));
 
         TaskAiSuggestion result = new ResilientTaskAiAssistant(primary, fallback, true)
-                .suggest("Estudar para a prova", null, "LOW");
+                .suggest("Estudar para a prova", null, Priority.LOW);
 
         assertThat(result.source()).isEqualTo(SuggestionSource.FALLBACK);
         assertThat(result.suggestedCategory()).isEqualTo(Category.STUDY);
@@ -47,7 +47,7 @@ class ResilientTaskAiAssistantTest {
         when(primary.suggest(any(), any(), any())).thenThrow(new InvalidAiResponseException("JSON inválido"));
 
         TaskAiSuggestion result = new ResilientTaskAiAssistant(primary, fallback, true)
-                .suggest("Pagar boleto", null, "HIGH");
+                .suggest("Pagar boleto", null, Priority.HIGH);
 
         assertThat(result.source()).isEqualTo(SuggestionSource.FALLBACK);
         assertThat(result.suggestedCategory()).isEqualTo(Category.FINANCE);

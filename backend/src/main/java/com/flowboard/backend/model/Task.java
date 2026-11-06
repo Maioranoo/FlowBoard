@@ -31,11 +31,17 @@ public class Task {
 
     private String description;
 
-    private String status;
+    // Fase 3: enums em vez de String. EnumType.STRING grava o NOME ("PENDING", "HIGH", "WORK"),
+    // que é exatamente o texto que já está nas linhas existentes, então nada precisa ser migrado.
+    // (O padrão do JPA, EnumType.ORDINAL, gravaria 0, 1, 2... e quebraria os dados atuais.)
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
 
-    private String priority;
+    @Enumerated(EnumType.STRING)
+    private Priority priority;
 
-    private String category;
+    @Enumerated(EnumType.STRING)
+    private Category category;
 
     // Prazo (Fase 2): só a data, sem hora, e opcional. Coluna nova, nula nas tarefas antigas.
     private LocalDate dueDate;

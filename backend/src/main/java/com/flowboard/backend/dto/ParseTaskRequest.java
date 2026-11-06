@@ -1,4 +1,4 @@
-package com.flowboard.backend.controller;
+package com.flowboard.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

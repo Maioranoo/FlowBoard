@@ -1,8 +1,10 @@
 package com.flowboard.backend.service;
 
 import com.flowboard.backend.ai.RuleBasedTaskAiAssistant;
+import com.flowboard.backend.dto.TaskRequest;
 import com.flowboard.backend.exception.TaskNotFoundException;
 import com.flowboard.backend.model.Task;
+import com.flowboard.backend.model.TaskStatus;
 import com.flowboard.backend.repository.TaskRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +30,11 @@ public class TaskService {
         this.ruleBasedAssistant = ruleBasedAssistant;
     }
 
-    public Task createTask(Task task) {
-        task.setStatus("PENDING");
+    public Task createTask(TaskRequest request) {
+        // A entidade é montada aqui, a partir do DTO: id, status e datas são decididos pelo servidor.
+        Task task = new Task();
+        copyEditableFields(request, task);
+        task.setStatus(TaskStatus.PENDING);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.markSuggestionGenerating();
@@ -49,21 +54,14 @@ public class TaskService {
                 .orElseThrow(TaskNotFoundException::new);
     }
 
-    public Task updateTask(Long id, Task updatedTask) {
-
-        Task task = taskRepository.findById(id)
-                .orElseThrow(TaskNotFoundException::new);
+    public Task updateTask(Long id, TaskRequest request) {
+        Task task = getTask(id);
 
         // Só gera nova sugestão se o conteúdo mudou: cada chamada à IA custa tempo e dinheiro.
-        boolean contentChanged = !Objects.equals(task.getTitle(), updatedTask.getTitle())
-                || !Objects.equals(task.getDescription(), updatedTask.getDescription());
+        boolean contentChanged = !Objects.equals(task.getTitle(), request.title())
+                || !Objects.equals(task.getDescription(), request.description());
 
-        task.setTitle(updatedTask.getTitle());
-        task.setDescription(updatedTask.getDescription());
-        task.setPriority(updatedTask.getPriority());
-        task.setCategory(updatedTask.getCategory());
-        task.setDueDate(updatedTask.getDueDate());
-
+        copyEditableFields(request, task);
         task.setUpdatedAt(LocalDateTime.now());
 
         if (contentChanged) {
@@ -76,16 +74,11 @@ public class TaskService {
         }
         return saved;
     }
+
     public Task toggleStatus(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(TaskNotFoundException::new);
+        Task task = getTask(id);
 
-        if (task.getStatus().equals("PENDING")) {
-            task.setStatus("COMPLETED");
-        } else {
-            task.setStatus("PENDING");
-        }
-
+        task.setStatus(task.getStatus().toggle());
         task.setUpdatedAt(LocalDateTime.now());
 
         return taskRepository.save(task);
@@ -97,6 +90,15 @@ public class TaskService {
         }
 
         taskRepository.deleteById(id);
+    }
+
+    /** Os únicos campos que o cliente pode alterar. */
+    private void copyEditableFields(TaskRequest request, Task task) {
+        task.setTitle(request.title());
+        task.setDescription(request.description());
+        task.setPriority(request.priority());
+        task.setCategory(request.category());
+        task.setDueDate(request.dueDate());
     }
 
     /**

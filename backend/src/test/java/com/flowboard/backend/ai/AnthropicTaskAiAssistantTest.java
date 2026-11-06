@@ -70,7 +70,7 @@ class AnthropicTaskAiAssistantTest {
                         "suggestedCategory", "STUDY",
                         "subtasks", List.of("Revisar rotações simples", "Resolver 3 exercícios"))), MediaType.APPLICATION_JSON));
 
-        TaskAiSuggestion result = assistant.suggest("Estudar AVL", "prova quinta", "MEDIUM");
+        TaskAiSuggestion result = assistant.suggest("Estudar AVL", "prova quinta", Priority.MEDIUM);
 
         assertThat(result.source()).isEqualTo(SuggestionSource.AI);
         assertThat(result.suggestedPriority()).isEqualTo(Priority.HIGH);

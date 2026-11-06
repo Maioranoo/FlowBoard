@@ -1,5 +1,7 @@
 package com.flowboard.backend.ai;
 
+import com.flowboard.backend.model.Priority;
+
 /**
  * Sugestões com resiliência: tenta a IA e cai para as regras locais se algo der errado.
  * A regra de fallback em si (e os logs) fica em AiFallback, compartilhada com o parse.
@@ -17,7 +19,7 @@ public class ResilientTaskAiAssistant implements TaskAiAssistant {
     }
 
     @Override
-    public TaskAiSuggestion suggest(String title, String description, String priority) {
+    public TaskAiSuggestion suggest(String title, String description, Priority priority) {
         return AiFallback.withFallback("sugestão", primaryEnabled,
                 () -> primary.suggest(title, description, priority),
                 () -> fallback.suggest(title, description, priority));

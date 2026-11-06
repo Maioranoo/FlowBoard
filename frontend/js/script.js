@@ -41,12 +41,19 @@ taskForm.addEventListener("submit", async (event) => {
         watchSuggestion(saved);
     } catch (error) {
         console.error("Erro ao salvar tarefa:", error);
-        showToast("❌ Não foi possível salvar. Tente novamente.");
+        showToast(`❌ ${validationMessage(error) ?? "Não foi possível salvar. Tente novamente."}`);
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalLabel;
     }
 });
+
+// Em um erro 400, devolve a primeira mensagem de campo enviada pelo back (ou null).
+function validationMessage(error) {
+    if (error.status !== 400 || !error.body) return null;
+    const fieldMessages = Object.values(error.body.fields ?? {});
+    return fieldMessages[0] ?? error.body.message ?? null;
+}
 
 // --- Criar com IA: interpreta a frase e PREENCHE o formulário. Quem salva é o usuário. ---
 const aiFillBtn = document.getElementById("ai-fill-btn");

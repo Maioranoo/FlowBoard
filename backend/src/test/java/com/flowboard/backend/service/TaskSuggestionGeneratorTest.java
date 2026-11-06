@@ -32,10 +32,10 @@ class TaskSuggestionGeneratorTest {
     @Test
     void savesSuggestionOnTask() {
         Task task = task("Estudar", "AVL");
-        when(assistant.suggest("Estudar", "AVL", "LOW")).thenReturn(suggestion);
+        when(assistant.suggest("Estudar", "AVL", Priority.LOW)).thenReturn(suggestion);
         when(repository.findById(1L)).thenReturn(Optional.of(task));
 
-        generator.generate(1L, "Estudar", "AVL", "LOW");
+        generator.generate(1L, "Estudar", "AVL", Priority.LOW);
 
         assertThat(task.getSuggestionSource()).isEqualTo(SuggestionSource.AI);
         assertThat(task.getSubtasks()).containsExactly("Passo 1");
@@ -48,7 +48,7 @@ class TaskSuggestionGeneratorTest {
         when(assistant.suggest(any(), any(), any())).thenReturn(suggestion);
         when(repository.findById(1L)).thenReturn(Optional.of(task));
 
-        generator.generate(1L, "Título antigo", "AVL", "LOW");
+        generator.generate(1L, "Título antigo", "AVL", Priority.LOW);
 
         verify(repository, never()).save(any());
     }
@@ -57,7 +57,7 @@ class TaskSuggestionGeneratorTest {
     void neverThrows() {
         when(assistant.suggest(any(), any(), any())).thenThrow(new IllegalStateException("bug"));
 
-        generator.generate(1L, "x", "y", "LOW"); // não deve lançar exceção
+        generator.generate(1L, "x", "y", Priority.LOW); // não deve lançar exceção
 
         verify(repository, never()).save(any());
     }

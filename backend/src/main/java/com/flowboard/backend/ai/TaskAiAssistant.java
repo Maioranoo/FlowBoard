@@ -1,5 +1,7 @@
 package com.flowboard.backend.ai;
 
+import com.flowboard.backend.model.Priority;
+
 /**
  * Contrato do "assistente de tarefas". O resto do sistema só conhece esta interface,
  * não sabe se por trás existe um LLM, regras locais ou as duas coisas combinadas.
@@ -18,5 +20,5 @@ public interface TaskAiAssistant {
      * @return sugestão já validada
      * @throws InvalidAiResponseException se a resposta do modelo não puder ser usada
      */
-    TaskAiSuggestion suggest(String title, String description, String priority);
+    TaskAiSuggestion suggest(String title, String description, Priority priority);
 }

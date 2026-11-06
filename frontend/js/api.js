@@ -10,6 +10,12 @@ async function request(path, options = {}) {
     if (!response.ok) {
         const error = new Error(`Erro HTTP ${response.status}`);
         error.status = response.status; // permite tratar 404, 429 etc. sem comparar texto
+        // O back devolve { message, fields: { campo: "mensagem" } } nos erros de validação.
+        try {
+            error.body = await response.json();
+        } catch {
+            error.body = null;
+        }
         throw error;
     }
 

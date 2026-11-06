@@ -1,5 +1,6 @@
 package com.flowboard.backend.ai;
 
+import com.flowboard.backend.model.Priority;
 import com.flowboard.backend.model.SuggestionSource;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class AnthropicTaskAiAssistant implements TaskAiAssistant {
     }
 
     @Override
-    public TaskAiSuggestion suggest(String title, String description, String priority) {
+    public TaskAiSuggestion suggest(String title, String description, Priority priority) {
         return client.call("sugestão", systemPrompt, buildUserMessage(title, description, priority), outputSchema,
                 json -> {
                     ModelOutput output = client.readJson(json, ModelOutput.class);
@@ -40,14 +41,14 @@ public class AnthropicTaskAiAssistant implements TaskAiAssistant {
      * Os dados do usuário vão delimitados por tags. O prompt do sistema instrui o modelo a tratar
      * esse conteúdo como dado, não como instrução (mitigação básica de prompt injection).
      */
-    private String buildUserMessage(String title, String description, String priority) {
+    private String buildUserMessage(String title, String description, Priority priority) {
         return """
                 <tarefa>
                 <titulo>%s</titulo>
                 <descricao>%s</descricao>
                 <prioridade_informada>%s</prioridade_informada>
                 </tarefa>""".formatted(
-                nullToEmpty(title), nullToEmpty(description), priority == null ? "não informada" : priority);
+                nullToEmpty(title), nullToEmpty(description), priority == null ? "não informada" : priority.name());
     }
 
     /**

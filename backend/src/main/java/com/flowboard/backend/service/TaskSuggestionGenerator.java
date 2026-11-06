@@ -3,6 +3,7 @@ package com.flowboard.backend.service;
 import com.flowboard.backend.ai.AiConfig;
 import com.flowboard.backend.ai.TaskAiAssistant;
 import com.flowboard.backend.ai.TaskAiSuggestion;
+import com.flowboard.backend.model.Priority;
 import com.flowboard.backend.model.Task;
 import com.flowboard.backend.repository.TaskRepository;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ public class TaskSuggestionGenerator {
      * geração já foi disparada pela edição) para não gravar uma sugestão velha por cima.
      */
     @Async(AiConfig.AI_EXECUTOR)
-    public void generate(Long taskId, String title, String description, String priority) {
+    public void generate(Long taskId, String title, String description, Priority priority) {
         try {
             TaskAiSuggestion suggestion = taskAiAssistant.suggest(title, description, priority);
 
