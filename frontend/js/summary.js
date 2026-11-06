@@ -1,56 +1,26 @@
-function showFlowAIThinking() {
-    const aiMessage = document.getElementById("ai-message");
+// Resumo de produtividade.
+// Antes este card se chamava "Flow AI", mostrava "Analisando..." por 800 ms (setTimeout) e
+// sorteava uma frase pronta. Não havia IA nenhuma. Agora é um resumo honesto: calculado
+// na hora, a partir das tarefas, sem atraso artificial e sem aleatoriedade.
+// A IA de verdade fica nas sugestões de cada tarefa (geradas no back-end).
 
-    aiMessage.innerHTML = `
-        <span class="thinking-dot"></span>
-        Analisando sua produtividade...
-    `;
-}
+function updateProductivitySummary(tasks) {
+    const message = document.getElementById("summary-message");
 
-function updateFlowAI(tasks) {
-    const aiMessage = document.getElementById("ai-message");
+    const total = tasks.length;
+    const completed = tasks.filter(isCompleted).length;
+    const pending = total - completed;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+    const highPending = tasks.filter(task => !isCompleted(task) && task.priority === "HIGH").length;
 
-    showFlowAIThinking();
-
-    setTimeout(() => {
-        const total = tasks.length;
-        const completed = tasks.filter(task => String(task.status).trim().toUpperCase() === "COMPLETED").length;
-        const pending = total - completed;
-        const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-
-        const messages = {
-            empty: [
-                "Vamos começar? Crie sua primeira tarefa e organize suas prioridades.",
-                "Sua área está livre. Que tal planejar o próximo objetivo?"
-            ],
-            completed: [
-                "Parabéns! Você concluiu todas as suas metas. Excelente ritmo.",
-                "Tudo em dia. Aproveite esse momento para planejar seus próximos resultados."
-            ],
-            high: [
-                `Você concluiu ${percent}% das tarefas. Falta pouco para finalizar tudo.`,
-                `Excelente progresso: ${percent}% concluído. Continue nesse ritmo.`
-            ],
-            medium: [
-                `Você está avançando bem. Ainda existem ${pending} tarefas em andamento.`,
-                `Bom progresso. Priorize as tarefas mais importantes para ganhar ritmo.`
-            ],
-            low: [
-                "Você está criando mais tarefas do que concluindo. Comece pelas prioridades mais importantes.",
-                "Sua produtividade ainda está baixa. Escolha uma tarefa simples e dê o primeiro passo."
-            ]
-        };
-
-        let selectedList;
-
-        if (total === 0) selectedList = messages.empty;
-        else if (pending === 0) selectedList = messages.completed;
-        else if (percent >= 70) selectedList = messages.high;
-        else if (percent >= 40) selectedList = messages.medium;
-        else selectedList = messages.low;
-
-        const randomIndex = Math.floor(Math.random() * selectedList.length);
-        aiMessage.textContent = selectedList[randomIndex];
-
-    }, 800);
+    if (total === 0) {
+        message.textContent = "Nenhuma tarefa ainda. Crie a primeira para começar a acompanhar seu progresso.";
+    } else if (pending === 0) {
+        message.textContent = `Todas as ${total} tarefas concluídas.`;
+    } else {
+        const plural = pending === 1 ? "tarefa pendente" : "tarefas pendentes";
+        let text = `${completed} de ${total} tarefas concluídas (${percent}%). ${pending} ${plural}`;
+        text += highPending > 0 ? `, ${highPending} com prioridade alta.` : ".";
+        message.textContent = text;
+    }
 }

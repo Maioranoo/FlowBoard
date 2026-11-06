@@ -48,7 +48,7 @@ body {
     margin: 36px auto;
 }
 
-.flow-ai-card {
+.summary-card {
     display: flex;
     align-items: center;
     gap: 22px;
@@ -60,7 +60,7 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
-.ai-icon {
+.summary-icon {
     width: 58px;
     height: 58px;
     display: flex;
@@ -71,7 +71,7 @@ body {
     font-size: 28px;
 }
 
-.ai-content {
+.summary-content {
     flex: 1;
 }
 
@@ -85,13 +85,13 @@ body {
     letter-spacing: 1px;
 }
 
-.ai-content h2,
+.summary-content h2,
 .section-header h2 {
     font-size: 24px;
     margin-bottom: 8px;
 }
 
-.ai-content p {
+.summary-content p {
     color: #9CA3AF;
     line-height: 1.6;
 }
@@ -282,7 +282,7 @@ select:focus {
         width: 92%;
     }
 
-    .flow-ai-card {
+    .summary-card {
         flex-direction: column;
         align-items: flex-start;
     }
@@ -565,12 +565,12 @@ select:focus {
         margin: 24px auto;
     }
 
-    .flow-ai-card {
+    .summary-card {
         flex-direction: column;
         align-items: flex-start;
     }
 
-    .flow-ai-card .primary-btn {
+    .summary-card .primary-btn {
         width: 100%;
     }
 
@@ -614,4 +614,76 @@ select:focus {
         bottom: 20px;
         min-width: auto;
     }
+}
+/* ---------- Sugestão da tarefa (IA ou regras) ---------- */
+.task-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-tags {
+    flex-wrap: wrap;
+}
+
+.suggestion {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #161B22;
+    border: 1px solid #30363D;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.suggestion.muted {
+    color: #9CA3AF;
+}
+
+.task-card .suggestion p {
+    margin-bottom: 0;
+}
+
+.task-card .suggestion .suggestion-text {
+    color: #E6EDF3;
+}
+
+.task-card .suggestion .suggestion-hints {
+    margin-top: 6px;
+    color: #9CA3AF;
+    font-size: 13px;
+}
+
+.source-badge {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: 1px;
+}
+
+.source-ai {
+    background: rgba(229, 57, 53, 0.14);
+    color: #FF8A8D;
+}
+
+.source-rules {
+    background: rgba(156, 163, 175, 0.14);
+    color: #C9D1D9;
+}
+
+.subtasks {
+    margin: 8px 0 0 18px;
+    color: #C9D1D9;
+    font-size: 13px;
+}
+
+.subtasks li + li {
+    margin-top: 2px;
+}
+
+.primary-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
 }

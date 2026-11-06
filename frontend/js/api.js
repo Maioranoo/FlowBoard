@@ -2,35 +2,48 @@
 
 const API_URL = "https://flowboard-backend-qnut.onrender.com/tasks";
 
-async function getTasks() {
-    const response = await fetch(API_URL);
-    return await response.json();
+// Função central: faz a requisição, lança erro se o status não for 2xx
+// e devolve o JSON da resposta (ou null quando o corpo vem vazio, como no DELETE).
+async function request(path, options = {}) {
+    const response = await fetch(`${API_URL}${path}`, options);
+
+    if (!response.ok) {
+        throw new Error(`Erro HTTP ${response.status}`);
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
 }
 
-async function createTask(task) {
-    await fetch(API_URL, {
-        method: "POST",
+function jsonOptions(method, body) {
+    return {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(task)
-    });
+        body: JSON.stringify(body)
+    };
+}
+
+async function getTasks() {
+    return request("");
+}
+
+async function getTaskById(id) {
+    return request(`/${id}`);
+}
+
+// Devolve a tarefa salva. O front usa essa resposta direto, sem recarregar a lista inteira.
+async function createTask(task) {
+    return request("", jsonOptions("POST", task));
 }
 
 async function updateTask(id, task) {
-    await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(task)
-    });
+    return request(`/${id}`, jsonOptions("PUT", task));
 }
 
 async function toggleTaskStatus(id) {
-    await fetch(`${API_URL}/${id}/toggle-status`, {
-        method: "PATCH"
-    });
+    return request(`/${id}/toggle-status`, { method: "PATCH" });
 }
 
 async function deleteTaskById(id) {
-    await fetch(`${API_URL}/${id}`, {
-        method: "DELETE"
-    });
+    return request(`/${id}`, { method: "DELETE" });
 }

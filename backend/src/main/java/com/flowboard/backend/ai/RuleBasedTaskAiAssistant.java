@@ -1,13 +1,38 @@
-package com.flowboard.backend.service;
+package com.flowboard.backend.ai;
 
-import org.springframework.stereotype.Service;
+import com.flowboard.backend.model.Category;
+import com.flowboard.backend.model.Priority;
+import com.flowboard.backend.model.SuggestionSource;
 
-@Service
-public class FlowAiService {
+import java.util.List;
+import java.util.Locale;
 
-    public String generateSuggestion(String title, String description, String priority) {
-        String text = ((title == null ? "" : title) + " " + (description == null ? "" : description)).toLowerCase();
+/**
+ * Antigo FlowAiService: regras por palavra-chave, sem nenhum modelo de linguagem.
+ * Agora é o FALLBACK, usado quando a API da Anthropic não está disponível.
+ *
+ * Vantagens: instantâneo, gratuito e nunca falha. Por isso é a rede de segurança.
+ * Limitações (honestas): não entende contexto, não gera subtarefas e só repete a
+ * prioridade escolhida pelo usuário.
+ */
+public class RuleBasedTaskAiAssistant implements TaskAiAssistant {
 
+    @Override
+    public TaskAiSuggestion suggest(String title, String description, String priority) {
+        String text = ((title == null ? "" : title) + " " + (description == null ? "" : description))
+                .toLowerCase(Locale.ROOT);
+
+        return new TaskAiSuggestion(
+                generateSuggestion(text, priority),
+                parsePriority(priority),
+                guessCategory(text),
+                List.of(),
+                SuggestionSource.FALLBACK
+        );
+    }
+
+    // Regras originais do FlowAiService, mantidas como estavam.
+    private String generateSuggestion(String text, String priority) {
         if (text.contains("xcl") || text.contains("projeto") || text.contains("spring") || text.contains("api")) {
             return "Divida o projeto em pequenas etapas e finalize primeiro as funcionalidades principais.";
         }
@@ -30,5 +55,45 @@ public class FlowAiService {
         }
 
         return "Divida essa tarefa em pequenas ações para facilitar a execução.";
+    }
+
+    // Categoria por palavra-chave. A ordem importa: a primeira regra que casar vence.
+    private Category guessCategory(String text) {
+        if (containsAny(text, "prova", "estudar", "escola", "atividade", "faculdade", "aula", "trabalho de")) {
+            return Category.STUDY;
+        }
+        if (containsAny(text, "xcl", "projeto", "spring", "api", "reunião", "reuniao", "cliente", "deploy")) {
+            return Category.WORK;
+        }
+        if (containsAny(text, "pagar", "conta", "boleto", "fatura", "banco", "imposto", "investir", "orçamento")) {
+            return Category.FINANCE;
+        }
+        if (containsAny(text, "academia", "agua", "água", "treino", "corrida", "médico", "medico", "consulta", "dentista")) {
+            return Category.HEALTH;
+        }
+        if (containsAny(text, "mercado", "comprar", "lista", "limpar", "lavar", "casa", "faxina", "consertar")) {
+            return Category.HOME;
+        }
+        return Category.PERSONAL;
+    }
+
+    private Priority parsePriority(String priority) {
+        if (priority == null) {
+            return Priority.MEDIUM;
+        }
+        try {
+            return Priority.valueOf(priority.strip().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return Priority.MEDIUM;
+        }
+    }
+
+    private boolean containsAny(String text, String... words) {
+        for (String word : words) {
+            if (text.contains(word)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -2,6 +2,18 @@
 
 let editingTaskId = null;
 
+// Escapa caracteres especiais de HTML. Todo texto vindo do usuário OU da IA passa por aqui
+// antes de ir para o innerHTML. Sem isso, um título como <img src=x onerror=...> executaria
+// código na página (XSS), e um texto com apóstrofo quebrava o botão de editar.
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
 function translatePriority(priority) {
     const priorities = {
         LOW: "Baixa",
@@ -17,7 +29,9 @@ function translateCategory(category) {
         WORK: "Trabalho",
         STUDY: "Estudos",
         PERSONAL: "Pessoal",
-        HEALTH: "Saúde"
+        HEALTH: "Saúde",
+        HOME: "Casa",
+        FINANCE: "Finanças"
     };
 
     return categories[category] || category;
@@ -45,11 +59,12 @@ function getPriorityClass(priority) {
 function getStatusClass(status) {
     return status === "COMPLETED" ? "status-completed" : "status-pending";
 }
+
 function openCreateModal() {
     editingTaskId = null;
     document.getElementById("task-form").reset();
     document.querySelector(".modal h2").textContent = "Nova tarefa";
-    document.querySelector(".modal .primary-btn").textContent = "Salvar tarefa";
+    document.querySelector("#task-form button[type='submit']").textContent = "Salvar tarefa";
 
     const modal = document.getElementById("task-modal");
     modal.classList.add("show");
@@ -66,16 +81,55 @@ function closeModal() {
 function openEditModal(task) {
     editingTaskId = task.id;
 
-    document.getElementById("title").value = task.title;
-    document.getElementById("description").value = task.description;
+    document.getElementById("title").value = task.title ?? "";
+    document.getElementById("description").value = task.description ?? "";
     document.getElementById("priority").value = task.priority;
     document.getElementById("category").value = task.category;
 
     document.querySelector(".modal h2").textContent = "Editar tarefa";
-    document.querySelector(".modal .primary-btn").textContent = "Salvar alterações";
+    document.querySelector("#task-form button[type='submit']").textContent = "Salvar alterações";
 
     const modal = document.getElementById("task-modal");
     modal.classList.add("show");
+}
+
+// Bloco da sugestão. Mostra de onde ela veio (IA ou regras) para o usuário saber o que está lendo.
+function renderSuggestion(task) {
+    if (task.suggestionSource === "GENERATING") {
+        if (task.suggestionTimedOut) {
+            return `<div class="suggestion muted">Sugestão indisponível no momento.</div>`;
+        }
+        return `<div class="suggestion muted"><span class="thinking-dot"></span>Gerando sugestão…</div>`;
+    }
+
+    if (!task.suggestion) {
+        return `<div class="suggestion muted">Sem sugestão disponível.</div>`;
+    }
+
+    // Tarefas antigas (sem suggestionSource) também foram geradas pelas regras.
+    const badge = task.suggestionSource === "AI"
+        ? `<span class="source-badge source-ai" title="Gerada por um modelo de linguagem">IA</span>`
+        : `<span class="source-badge source-rules" title="Gerada por regras locais, sem IA">Regras</span>`;
+
+    const hints = [];
+    if (task.suggestedPriority) hints.push(`prioridade ${translatePriority(task.suggestedPriority)}`);
+    if (task.suggestedCategory) hints.push(translateCategory(task.suggestedCategory));
+    const hintsHtml = hints.length
+        ? `<p class="suggestion-hints">Sugerido: ${escapeHtml(hints.join(" · "))}</p>`
+        : "";
+
+    const subtasks = task.subtasks || [];
+    const subtasksHtml = subtasks.length
+        ? `<ul class="subtasks">${subtasks.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        : "";
+
+    return `
+        <div class="suggestion">
+            <p class="suggestion-text">${badge}${escapeHtml(task.suggestion)}</p>
+            ${hintsHtml}
+            ${subtasksHtml}
+        </div>
+    `;
 }
 
 function renderTasks(tasks) {
@@ -96,34 +150,36 @@ function renderTasks(tasks) {
         const taskCard = document.createElement("div");
         taskCard.classList.add("task-card");
 
-        if (String(task.status).trim().toUpperCase() === "COMPLETED") {
+        if (isCompleted(task)) {
             taskCard.classList.add("completed");
         }
 
+        // Os botões carregam só o id (data-id). O clique é tratado em script.js,
+        // que busca a tarefa na lista em memória. Nada de JSON dentro do HTML.
         taskCard.innerHTML = `
-            <div>
-                <h3>${task.title}</h3>
-                <p>${task.description}</p>
+            <div class="task-body">
+                <h3>${escapeHtml(task.title)}</h3>
+                <p>${escapeHtml(task.description)}</p>
 
                 <div class="task-tags">
-                    <span class="${getStatusClass(task.status)}">${translateStatus(task.status)}</span>
-                    <span class="${getPriorityClass(task.priority)}">${translatePriority(task.priority)}</span>
-                    <span>${translateCategory(task.category)}</span>
+                    <span class="${getStatusClass(task.status)}">${escapeHtml(translateStatus(task.status))}</span>
+                    <span class="${getPriorityClass(task.priority)}">${escapeHtml(translatePriority(task.priority))}</span>
+                    <span>${escapeHtml(translateCategory(task.category))}</span>
                 </div>
 
-                <small>🤖 ${task.suggestion || "Sem sugestão disponível."}</small>
+                ${renderSuggestion(task)}
             </div>
 
             <div class="task-actions">
-                <button class="action-complete" onclick="handleToggleStatus(${task.id})">
+                <button class="action-complete" data-action="toggle" data-id="${task.id}" aria-label="Concluir ou reabrir">
                     <i data-lucide="check"></i>
                 </button>
 
-                <button class="action-edit" onclick='openEditModal(${JSON.stringify(task)})'>
+                <button class="action-edit" data-action="edit" data-id="${task.id}" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                 </button>
 
-                <button class="action-delete" onclick="handleDeleteTask(${task.id})">
+                <button class="action-delete" data-action="delete" data-id="${task.id}" aria-label="Excluir">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>

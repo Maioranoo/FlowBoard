@@ -26,6 +26,12 @@ public class TaskController {
         return taskService.listTasks();
     }
 
+    // Usado pelo front para buscar a sugestão quando ela termina de ser gerada em segundo plano.
+    @GetMapping("/{id}")
+    public Task getTask(@PathVariable Long id) {
+        return taskService.getTask(id);
+    }
+
     @PutMapping("/{id}")
     public Task updateTask(@PathVariable Long id, @RequestBody Task task) {
         return taskService.updateTask(id, task);
