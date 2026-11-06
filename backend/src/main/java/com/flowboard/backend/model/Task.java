@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import jakarta.persistence.Table;
@@ -35,6 +36,9 @@ public class Task {
     private String priority;
 
     private String category;
+
+    // Prazo (Fase 2): só a data, sem hora, e opcional. Coluna nova, nula nas tarefas antigas.
+    private LocalDate dueDate;
 
     // A coluna já existe no banco como varchar(255). O ddl-auto=update cria colunas
     // novas, mas NÃO aumenta colunas existentes, por isso o texto é limitado a 255.

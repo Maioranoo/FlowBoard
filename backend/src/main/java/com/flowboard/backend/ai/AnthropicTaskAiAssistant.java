@@ -1,138 +1,39 @@
 package com.flowboard.backend.ai;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flowboard.backend.model.Category;
-import com.flowboard.backend.model.Priority;
 import com.flowboard.backend.model.SuggestionSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClient;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Implementação que chama a API de Mensagens da Anthropic (POST /v1/messages) via RestClient.
+ * Sugestão de produtividade para uma tarefa, gerada pelo modelo da Anthropic.
  *
- * Fluxo:
- *  1. monta a requisição: prompt do sistema (arquivo) + dados da tarefa + JSON Schema da saída;
- *  2. a API usa "structured outputs" (output_config.format) para obrigar o modelo a responder
- *     exatamente naquele formato;
- *  3. mesmo assim, o código confere tudo: a resposta pode vir cortada (max_tokens), recusada
- *     (refusal) ou com valores fora do permitido. Qualquer problema vira InvalidAiResponseException,
- *     e quem chamou decide o que fazer (o ResilientTaskAiAssistant usa o fallback).
+ * A chamada HTTP, a checagem do stop_reason e os logs ficam no AnthropicClient (compartilhado).
+ * Aqui fica só o que é específico desta funcionalidade: a mensagem, o schema e a validação.
  */
 public class AnthropicTaskAiAssistant implements TaskAiAssistant {
 
-    private static final Logger log = LoggerFactory.getLogger(AnthropicTaskAiAssistant.class);
-
-    /** Versão da API de Mensagens enviada no header obrigatório "anthropic-version". */
-    static final String ANTHROPIC_VERSION = "2026-10-21";
-
-    private final RestClient restClient;
-    private final AnthropicProperties properties;
+    private final AnthropicClient client;
     private final String systemPrompt;
-    private final ObjectMapper objectMapper;
-    private final Map<String, Object> outputSchema;
+    private final Map<String, Object> outputSchema = buildOutputSchema();
 
-    public AnthropicTaskAiAssistant(RestClient restClient, AnthropicProperties properties,
-                                    String systemPrompt, ObjectMapper objectMapper) {
-        this.restClient = restClient;
-        this.properties = properties;
+    public AnthropicTaskAiAssistant(AnthropicClient client, String systemPrompt) {
+        this.client = client;
         this.systemPrompt = systemPrompt;
-        this.objectMapper = objectMapper;
-        this.outputSchema = buildOutputSchema();
     }
 
     @Override
     public TaskAiSuggestion suggest(String title, String description, String priority) {
-        Map<String, Object> request = Map.of(
-                "model", properties.model(),
-                "max_tokens", properties.maxTokens(),
-                "system", systemPrompt,
-                "messages", List.of(Map.of("role", "user", "content", buildUserMessage(title, description, priority))),
-                "output_config", Map.of(
-                        // Tarefa simples: esforço baixo = resposta mais rápida e mais barata.
-                        "effort", "low",
-                        "format", Map.of("type", "json_schema", "schema", outputSchema)
-                )
-        );
-
-        long start = System.nanoTime();
-        JsonNode response = restClient.post()
-                .uri("/v1/messages")
-                .header("x-api-key", properties.apiKey())
-                .header("anthropic-version", ANTHROPIC_VERSION)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()          // respostas 4xx/5xx viram RestClientResponseException
-                .body(JsonNode.class);
-        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-
-        TaskAiSuggestion suggestion;
-        try {
-            suggestion = parseResponse(response);
-        } catch (InvalidAiResponseException e) {
-            // Diagnóstico: quando a resposta é rejeitada, registra o que o modelo devolveu
-            // (só o conteúdo gerado, nunca a chave), para dar para descobrir o porquê.
-            log.warn("FlowAI: resposta rejeitada em {} ms (stop_reason={}, tokens entrada={}, saída={}). Conteúdo: {}",
-                    elapsedMs,
-                    response == null ? null : response.path("stop_reason").asText(),
-                    response == null ? -1 : response.path("usage").path("input_tokens").asInt(-1),
-                    response == null ? -1 : response.path("usage").path("output_tokens").asInt(-1),
-                    describeContent(response));
-            throw e;
-        }
-
-        log.info("FlowAI: sugestão gerada por {} em {} ms (tokens entrada={}, saída={})",
-                properties.model(), elapsedMs,
-                response.path("usage").path("input_tokens").asInt(-1),
-                response.path("usage").path("output_tokens").asInt(-1));
-        return suggestion;
-    }
-
-    TaskAiSuggestion parseResponse(JsonNode response) {
-        if (response == null) {
-            throw new InvalidAiResponseException("resposta vazia da API");
-        }
-
-        // "end_turn" = o modelo terminou normalmente. "max_tokens" = cortado no meio (JSON incompleto).
-        // "refusal" = o modelo se recusou a responder. Só aceitamos o primeiro.
-        String stopReason = response.path("stop_reason").asText("");
-        if (!"end_turn".equals(stopReason)) {
-            throw new InvalidAiResponseException("stop_reason inesperado: " + stopReason);
-        }
-
-        // O conteúdo é uma lista de blocos; pode haver blocos de "thinking" antes do texto.
-        String json = null;
-        for (JsonNode block : response.path("content")) {
-            if ("text".equals(block.path("type").asText())) {
-                json = block.path("text").asText();
-                break;
-            }
-        }
-        if (json == null || json.isBlank()) {
-            throw new InvalidAiResponseException("resposta sem bloco de texto");
-        }
-
-        ModelOutput output;
-        try {
-            output = objectMapper.readValue(json, ModelOutput.class);
-        } catch (JsonProcessingException e) {
-            throw new InvalidAiResponseException("JSON inválido na resposta do modelo", e);
-        }
-
-        return TaskAiSuggestion.of(
-                output.suggestion(),
-                output.suggestedPriority(),
-                output.suggestedCategory(),
-                output.subtasks(),
-                SuggestionSource.AI
-        );
+        return client.call("sugestão", systemPrompt, buildUserMessage(title, description, priority), outputSchema,
+                json -> {
+                    ModelOutput output = client.readJson(json, ModelOutput.class);
+                    return TaskAiSuggestion.of(
+                            output.suggestion(),
+                            output.suggestedPriority(),
+                            output.suggestedCategory(),
+                            output.subtasks(),
+                            SuggestionSource.AI);
+                });
     }
 
     /**
@@ -160,35 +61,13 @@ public class AnthropicTaskAiAssistant implements TaskAiAssistant {
                 "type", "object",
                 "properties", Map.of(
                         "suggestion", Map.of("type", "string"),
-                        "suggestedPriority", Map.of("type", "string", "enum", enumNames(Priority.values())),
-                        "suggestedCategory", Map.of("type", "string", "enum", enumNames(Category.values())),
+                        "suggestedPriority", AiSchemas.priorityProperty(),
+                        "suggestedCategory", AiSchemas.categoryProperty(),
                         "subtasks", Map.of("type", "array", "items", Map.of("type", "string"))
                 ),
                 "required", List.of("suggestion", "suggestedPriority", "suggestedCategory", "subtasks"),
                 "additionalProperties", false
         );
-    }
-
-    private static List<String> enumNames(Enum<?>[] values) {
-        return Arrays.stream(values).map(Enum::name).toList();
-    }
-
-    /** Resume os blocos de conteúdo da resposta em uma linha curta: tipo de cada bloco e o texto (truncado). */
-    private static String describeContent(JsonNode response) {
-        if (response == null) {
-            return "<sem resposta>";
-        }
-        StringBuilder out = new StringBuilder();
-        for (JsonNode block : response.path("content")) {
-            String type = block.path("type").asText();
-            out.append('[').append(type);
-            if ("text".equals(type)) {
-                out.append(": ").append(block.path("text").asText());
-            }
-            out.append("] ");
-        }
-        String oneLine = out.toString().replaceAll("\\s+", " ").strip();
-        return oneLine.length() > 800 ? oneLine.substring(0, 800) + "…" : oneLine;
     }
 
     private static String nullToEmpty(String value) {

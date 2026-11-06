@@ -21,7 +21,9 @@ taskForm.addEventListener("submit", async (event) => {
         title: document.getElementById("title").value,
         description: document.getElementById("description").value,
         priority: document.getElementById("priority").value,
-        category: document.getElementById("category").value
+        category: document.getElementById("category").value,
+        // Campo de data vazio vira null ("sem prazo"), não string vazia.
+        dueDate: document.getElementById("dueDate").value || null
     };
 
     const taskId = editingTaskId;
@@ -43,6 +45,48 @@ taskForm.addEventListener("submit", async (event) => {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalLabel;
+    }
+});
+
+// --- Criar com IA: interpreta a frase e PREENCHE o formulário. Quem salva é o usuário. ---
+const aiFillBtn = document.getElementById("ai-fill-btn");
+
+aiFillBtn.addEventListener("click", async () => {
+    const text = document.getElementById("ai-text").value.trim();
+    if (!text) {
+        setAiFillStatus("Escreva a tarefa com suas palavras primeiro.", "error");
+        return;
+    }
+
+    const originalLabel = aiFillBtn.textContent;
+    aiFillBtn.disabled = true;
+    aiFillBtn.textContent = "Interpretando…";
+    setAiFillStatus("");
+
+    try {
+        const draft = await parseTask(text);
+
+        document.getElementById("title").value = draft.title;
+        document.getElementById("description").value = draft.description;
+        document.getElementById("priority").value = draft.priority;
+        document.getElementById("category").value = draft.category;
+        document.getElementById("dueDate").value = draft.dueDate ?? "";
+
+        if (draft.source === "AI") {
+            setAiFillStatus("Preenchido pela IA. Revise os campos antes de salvar.", "ok");
+        } else {
+            setAiFillStatus("A IA não respondeu agora; preenchi com regras simples. Revise os campos.", "warn");
+        }
+        document.getElementById("title").focus();
+    } catch (error) {
+        console.error("Erro ao interpretar tarefa:", error);
+        const message = error.status === 429
+            ? "Muitas tentativas seguidas. Aguarde um minuto e tente de novo."
+            : "Não foi possível interpretar agora. Preencha os campos manualmente.";
+        setAiFillStatus(message, "error");
+    } finally {
+        aiFillBtn.disabled = false;
+        aiFillBtn.textContent = originalLabel;
     }
 });
 
@@ -101,7 +145,7 @@ function watchSuggestion(task) {
             }
         } catch (error) {
             // 404 = a tarefa foi excluída; outros erros: tenta de novo até o limite.
-            if (String(error.message).includes("404")) {
+            if (error.status === 404) {
                 watchedTaskIds.delete(task.id);
                 return;
             }

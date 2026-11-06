@@ -45,14 +45,15 @@ class TaskAiSuggestionTest {
                 .isInstanceOf(InvalidAiResponseException.class);
     }
 
-    /** Se alguém criar uma categoria nova no enum e esquecer de explicá-la no prompt, este teste falha. */
+    /** Se alguém criar uma categoria nova no enum e esquecer de explicá-la nos prompts, este teste falha. */
     @Test
-    void systemPromptDescribesEveryCategory() throws Exception {
-        String prompt = new ClassPathResource("prompts/task-suggestion-system.txt")
-                .getContentAsString(StandardCharsets.UTF_8);
+    void systemPromptsDescribeEveryCategory() throws Exception {
+        for (String file : List.of("prompts/task-suggestion-system.txt", "prompts/task-parse-system.txt")) {
+            String prompt = new ClassPathResource(file).getContentAsString(StandardCharsets.UTF_8);
 
-        for (Category category : Category.values()) {
-            assertThat(prompt).contains("- " + category.name() + ":");
+            for (Category category : Category.values()) {
+                assertThat(prompt).as(file).contains("- " + category.name() + ":");
+            }
         }
     }
 }

@@ -92,6 +92,15 @@
             <h2>Nova tarefa</h2>
 
             <form id="task-form">
+                <!-- Criação por linguagem natural: preenche os campos abaixo para revisão, não salva. -->
+                <div id="ai-fill" class="ai-fill">
+                    <label for="ai-text">Descreva a tarefa</label>
+                    <textarea id="ai-text" maxlength="500"
+                        placeholder="Ex: estudar árvores AVL pra prova de estrutura de dados quinta, urgente"></textarea>
+                    <button type="button" id="ai-fill-btn" class="secondary-btn">Preencher com IA</button>
+                    <p id="ai-fill-status" class="ai-fill-status" aria-live="polite"></p>
+                </div>
+
                 <label>Título</label>
                 <input type="text" id="title" placeholder="Ex: Finalizar projeto XCL">
 
@@ -114,6 +123,9 @@
                     <option value="HOME">Casa</option>
                     <option value="FINANCE">Finanças</option>
                 </select>
+
+                <label for="dueDate">Prazo (opcional)</label>
+                <input type="date" id="dueDate">
 
                 <div class="modal-actions">
                     <button type="button" id="close-modal-btn" class="secondary-btn">Cancelar</button>

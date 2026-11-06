@@ -60,9 +60,40 @@ function getStatusClass(status) {
     return status === "COMPLETED" ? "status-completed" : "status-pending";
 }
 
+// --- Prazo (dueDate) ---
+// O back manda a data como "AAAA-MM-DD". Comparamos e formatamos como texto, sem new Date(),
+// porque new Date("2026-11-12") é interpretado em UTC e, no Brasil, viraria o dia 11 às 21h.
+function todayIso() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function formatDueDate(iso) {
+    const [year, month, day] = iso.split("-");
+    return `${day}/${month}`;
+}
+
+function renderDueDateTag(task) {
+    if (!task.dueDate) return "";
+
+    const overdue = !isCompleted(task) && task.dueDate < todayIso();
+    const label = overdue ? `Atrasada · ${formatDueDate(task.dueDate)}` : `Prazo: ${formatDueDate(task.dueDate)}`;
+    return `<span class="${overdue ? "due-overdue" : "due-date"}">${escapeHtml(label)}</span>`;
+}
+
+function setAiFillStatus(message, kind = "") {
+    const status = document.getElementById("ai-fill-status");
+    status.textContent = message;
+    status.className = `ai-fill-status ${kind}`;
+}
+
 function openCreateModal() {
     editingTaskId = null;
     document.getElementById("task-form").reset();
+    document.getElementById("ai-fill").hidden = false;
+    setAiFillStatus("");
     document.querySelector(".modal h2").textContent = "Nova tarefa";
     document.querySelector("#task-form button[type='submit']").textContent = "Salvar tarefa";
 
@@ -85,6 +116,10 @@ function openEditModal(task) {
     document.getElementById("description").value = task.description ?? "";
     document.getElementById("priority").value = task.priority;
     document.getElementById("category").value = task.category;
+    document.getElementById("dueDate").value = task.dueDate ?? "";
+
+    // Na edição o campo "Descreva a tarefa" some: ele sobrescreveria o que já foi escrito.
+    document.getElementById("ai-fill").hidden = true;
 
     document.querySelector(".modal h2").textContent = "Editar tarefa";
     document.querySelector("#task-form button[type='submit']").textContent = "Salvar alterações";
@@ -165,6 +200,7 @@ function renderTasks(tasks) {
                     <span class="${getStatusClass(task.status)}">${escapeHtml(translateStatus(task.status))}</span>
                     <span class="${getPriorityClass(task.priority)}">${escapeHtml(translatePriority(task.priority))}</span>
                     <span>${escapeHtml(translateCategory(task.category))}</span>
+                    ${renderDueDateTag(task)}
                 </div>
 
                 ${renderSuggestion(task)}

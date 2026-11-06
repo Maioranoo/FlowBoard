@@ -687,3 +687,75 @@ select:focus {
     opacity: 0.6;
     cursor: wait;
 }
+
+/* ---------- Criar com IA (Fase 2) ---------- */
+.ai-fill {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 22px;
+    padding: 16px;
+    border: 1px dashed #30363D;
+    border-radius: 14px;
+}
+
+.ai-fill[hidden] {
+    display: none;
+}
+
+.ai-fill textarea {
+    min-height: 64px;
+    margin-bottom: 12px;
+}
+
+.ai-fill .secondary-btn {
+    align-self: flex-start;
+}
+
+.ai-fill-status {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #9CA3AF;
+}
+
+.ai-fill-status:empty {
+    display: none;
+}
+
+.ai-fill-status.ok {
+    color: #22C55E;
+}
+
+.ai-fill-status.warn {
+    color: #F59E0B;
+}
+
+.ai-fill-status.error {
+    color: #FF8A8D;
+}
+
+.secondary-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* Prazo no card */
+.task-tags .due-date {
+    background: rgba(156, 163, 175, 0.14);
+    color: #C9D1D9;
+}
+
+.task-tags .due-overdue {
+    background: rgba(229, 57, 53, 0.2);
+    color: #FF8A8D;
+}
+
+input[type="date"] {
+    color-scheme: dark;
+}
+
+/* O modal cresceu com os campos da Fase 2: rola por dentro em telas baixas. */
+.modal {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+}

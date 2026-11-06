@@ -1,6 +1,7 @@
 package com.flowboard.backend.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flowboard.backend.ratelimit.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,8 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.concurrent.Executor;
 
 /**
@@ -37,13 +40,11 @@ public class AiConfig {
         return new RuleBasedTaskAiAssistant();
     }
 
+    /** Cliente HTTP da Anthropic, compartilhado por todas as funcionalidades de IA. */
     @Bean
-    public AnthropicTaskAiAssistant anthropicTaskAiAssistant(
-            RestClient.Builder restClientBuilder,
-            AnthropicProperties properties,
-            ObjectMapper objectMapper,
-            @Value("classpath:prompts/task-suggestion-system.txt") Resource systemPromptFile) throws IOException {
-
+    public AnthropicClient anthropicClient(RestClient.Builder restClientBuilder,
+                                           AnthropicProperties properties,
+                                           ObjectMapper objectMapper) {
         // Timeout de conexão e de leitura. Sem isso, uma API lenta prenderia a thread indefinidamente.
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.timeout())
@@ -56,8 +57,51 @@ public class AiConfig {
                 .requestFactory(requestFactory)
                 .build();
 
-        String systemPrompt = systemPromptFile.getContentAsString(StandardCharsets.UTF_8);
-        return new AnthropicTaskAiAssistant(restClient, properties, systemPrompt, objectMapper);
+        return new AnthropicClient(restClient, properties, objectMapper);
+    }
+
+    @Bean
+    public AnthropicTaskAiAssistant anthropicTaskAiAssistant(
+            AnthropicClient client,
+            @Value("classpath:prompts/task-suggestion-system.txt") Resource systemPromptFile) throws IOException {
+        return new AnthropicTaskAiAssistant(client, systemPromptFile.getContentAsString(StandardCharsets.UTF_8));
+    }
+
+    // --- Fase 2: criação de tarefa por linguagem natural ---
+
+    @Bean
+    public AnthropicTaskParser anthropicTaskParser(
+            AnthropicClient client,
+            @Value("classpath:prompts/task-parse-system.txt") Resource systemPromptFile) throws IOException {
+        return new AnthropicTaskParser(client, systemPromptFile.getContentAsString(StandardCharsets.UTF_8));
+    }
+
+    @Bean
+    public RuleBasedTaskParser ruleBasedTaskParser() {
+        return new RuleBasedTaskParser();
+    }
+
+    @Bean
+    @Primary
+    public TaskParser taskParser(AnthropicTaskParser anthropic, RuleBasedTaskParser rules,
+                                 AnthropicProperties properties) {
+        return new ResilientTaskParser(anthropic, rules, properties.hasApiKey());
+    }
+
+    /**
+     * Relógio no fuso do usuário. Injetar um Clock (em vez de chamar LocalDate.now() direto)
+     * também permite que os testes fixem "hoje" numa data conhecida.
+     */
+    @Bean
+    public Clock appClock(@Value("${app.timezone}") String timezone) {
+        return Clock.system(ZoneId.of(timezone));
+    }
+
+    @Bean
+    public RateLimiter parseRateLimiter(@Value("${app.parse.rate-limit.per-client}") int perClient,
+                                        @Value("${app.parse.rate-limit.global}") int global,
+                                        Clock clock) {
+        return new RateLimiter(perClient, global, clock);
     }
 
     /**

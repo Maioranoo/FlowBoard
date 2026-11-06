@@ -62,6 +62,7 @@ public class TaskService {
         task.setDescription(updatedTask.getDescription());
         task.setPriority(updatedTask.getPriority());
         task.setCategory(updatedTask.getCategory());
+        task.setDueDate(updatedTask.getDueDate());
 
         task.setUpdatedAt(LocalDateTime.now());
 

@@ -48,7 +48,8 @@ class AnthropicTaskAiAssistantTest {
         server = MockRestServiceServer.bindTo(builder).build();
         AnthropicProperties properties = new AnthropicProperties(
                 "test-key", "claude-haiku-5-5", "https://api.anthropic.test", Duration.ofSeconds(5), 1024);
-        assistant = new AnthropicTaskAiAssistant(builder.build(), properties, "PROMPT DO SISTEMA", objectMapper);
+        assistant = new AnthropicTaskAiAssistant(
+                new AnthropicClient(builder.build(), properties, objectMapper), "PROMPT DO SISTEMA");
     }
 
     @Test
@@ -56,7 +57,7 @@ class AnthropicTaskAiAssistantTest {
         server.expect(requestTo(URL))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("x-api-key", "test-key"))
-                .andExpect(header("anthropic-version", AnthropicTaskAiAssistant.ANTHROPIC_VERSION))
+                .andExpect(header("anthropic-version", AnthropicClient.ANTHROPIC_VERSION))
                 .andExpect(jsonPath("$.model").value("claude-haiku-5-5"))
                 .andExpect(jsonPath("$.system").value("PROMPT DO SISTEMA"))
                 .andExpect(jsonPath("$.messages[0].content").value(org.hamcrest.Matchers.containsString("Estudar AVL")))
