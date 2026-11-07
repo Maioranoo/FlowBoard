@@ -1,6 +1,9 @@
 package com.flowboard.backend.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.flowboard.backend.auth.InvalidCredentialsException;
+import com.flowboard.backend.auth.NotAGuestException;
+import com.flowboard.backend.auth.UsernameTakenException;
 import com.flowboard.backend.ratelimit.RateLimitExceededException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -65,6 +68,25 @@ public class GlobalExceptionHandler {
         }
 
         return ResponseEntity.badRequest().body(body(HttpStatus.BAD_REQUEST, "Dados inválidos", message));
+    }
+
+    /** 409: o nome escolhido já tem dono. Vai em "fields" para o front mostrar ao lado do campo. */
+    @ExceptionHandler(UsernameTakenException.class)
+    public ResponseEntity<Map<String, Object>> handleUsernameTaken(UsernameTakenException ex) {
+        Map<String, Object> body = body(HttpStatus.CONFLICT, "Conflito", ex.getMessage());
+        body.put("fields", Map.of("username", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(NotAGuestException.class)
+    public ResponseEntity<Map<String, Object>> handleNotAGuest(NotAGuestException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body(HttpStatus.CONFLICT, "Conflito", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(body(HttpStatus.UNAUTHORIZED, "Não autenticado", ex.getMessage()));
     }
 
     // 429 Too Many Requests, com o cabeçalho padrão Retry-After dizendo quando tentar de novo.

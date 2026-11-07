@@ -1,7 +1,11 @@
 package com.flowboard.backend.model;
 
 import com.flowboard.backend.ai.TaskAiSuggestion;
+import com.flowboard.backend.user.User;
 import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -70,6 +74,12 @@ public class Task {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // Dono da tarefa. LAZY: listar tarefas não precisa carregar o usuário junto.
+    // Nunca sai na API (o TaskResponse não tem esse campo).
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
+    private User owner;
 
     /** Limpa a sugestão anterior e marca que uma nova está sendo gerada. */
     public void markSuggestionGenerating() {

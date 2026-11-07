@@ -107,11 +107,16 @@ async function loadTasks() {
         if (hint) hint.hidden = false;
     }, SLOW_LOAD_HINT_MS);
 
+    const epoch = sessionEpoch;
     try {
-        currentTasks = await getTasks();
+        const tasks = await getTasks();
+        if (epoch !== sessionEpoch) return; // a pessoa saiu enquanto a lista carregava
+        currentTasks = tasks;
         refreshView();
         currentTasks.forEach(watchSuggestion);
     } catch (error) {
+        // 401: a sessão expirou e o auth.js já voltou para a tela de entrada.
+        if (error.status === 401) return;
         console.error("Erro ao carregar tarefas:", error);
         document.getElementById("summary-message").textContent =
             "Não consegui conectar com o servidor.";
@@ -125,6 +130,33 @@ async function loadTasks() {
         clearTimeout(slowHintTimer);
         taskList.setAttribute("aria-busy", "false");
     }
+}
+
+// Volta a tela de tarefas ao estado inicial ("carregando"), ao entrar ou trocar de conta.
+// Sem isso, as tarefas da sessão anterior apareceriam por um instante para a próxima pessoa.
+function resetTaskState() {
+    currentTasks = [];
+    currentFilter = "ALL";
+    watchedTaskIds.clear();
+    document.querySelectorAll(".filter-btn").forEach((btn, index) => {
+        btn.classList.toggle("active", index === 0);
+    });
+    document.getElementById("summary-message").textContent = "Conectando ao servidor…";
+    ["total-tasks", "completed-tasks", "pending-tasks", "productivity"].forEach(id => {
+        document.getElementById(id).textContent = "–";
+    });
+    document.getElementById("productivity-bar").style.width = "0";
+    const taskList = document.getElementById("task-list");
+    taskList.setAttribute("aria-busy", "true");
+    taskList.innerHTML = `
+        <div class="empty-state">
+            <h3>Carregando tarefas…</h3>
+            <p id="slow-hint" hidden>
+                O servidor gratuito entra em repouso quando fica sem uso.
+                A primeira resposta pode levar até 1 minuto; as seguintes são rápidas.
+            </p>
+        </div>
+    `;
 }
 
 function refreshView() {
@@ -157,20 +189,24 @@ function watchSuggestion(task) {
     }
     watchedTaskIds.add(task.id);
 
+    // Se a pessoa sair (ou a sessão expirar) no meio da espera, esta consulta para sozinha.
+    const epoch = sessionEpoch;
     let attempts = 0;
 
     const check = async () => {
+        if (epoch !== sessionEpoch) return;
         attempts++;
         try {
             const updated = await getTaskById(task.id);
+            if (epoch !== sessionEpoch) return; // a resposta chegou depois de a sessão mudar
             if (updated.suggestionSource !== "GENERATING") {
                 watchedTaskIds.delete(task.id);
                 upsertTask(updated);
                 return;
             }
         } catch (error) {
-            // 404 = a tarefa foi excluída; outros erros: tenta de novo até o limite.
-            if (error.status === 404) {
+            // 404 = a tarefa foi excluída; 401 = a sessão acabou. Outros erros: tenta de novo até o limite.
+            if (error.status === 404 || error.status === 401) {
                 watchedTaskIds.delete(task.id);
                 return;
             }
@@ -276,4 +312,4 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     }
 });
 
-loadTasks();
+// A carga inicial agora é feita pelo auth.js, depois de saber se há alguém logado.

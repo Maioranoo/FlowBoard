@@ -691,6 +691,185 @@ select:focus {
     color: var(--accent-text);
 }
 
+/* ---------- Tela de entrada ---------- */
+
+[hidden] {
+    display: none !important;
+}
+
+.auth-view {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 32px 16px;
+}
+
+.auth-panel {
+    width: min(400px, 100%);
+    padding: 32px 28px 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.auth-logo {
+    display: flex;
+    line-height: 0;
+}
+
+.auth-logo img {
+    width: auto;
+    height: 25px;
+}
+
+.auth-intro {
+    margin: 16px 0 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.auth-choice {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-wide {
+    width: 100%;
+    min-height: 44px;
+}
+
+.auth-caption {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.auth-notice {
+    margin: -8px 0 20px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    font-size: 13px;
+}
+
+.auth-form h2 {
+    margin-bottom: 16px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+/* 16 px nos campos: abaixo disso o Safari do iPhone dá zoom na página ao focar o campo. */
+.auth-form input,
+#upgrade-form input {
+    font-size: 16px;
+}
+
+.auth-form .primary-btn {
+    margin-top: 4px;
+}
+
+.link-btn {
+    min-height: 44px;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: var(--accent-text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.link-btn:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.link-btn-muted {
+    color: var(--text-muted);
+}
+
+.link-btn-muted:hover {
+    color: var(--text);
+}
+
+.auth-link {
+    align-self: center;
+    margin-top: 4px;
+}
+
+.auth-form .auth-link + .auth-link {
+    margin-top: -8px;
+}
+
+/* Erros: ao lado do campo e no formulário. Somem quando vazios. */
+.field-error,
+.form-error {
+    color: var(--accent-text);
+    font-size: 13px;
+}
+
+.field-error {
+    margin: -10px 0 14px;
+}
+
+.form-error {
+    margin-bottom: 12px;
+}
+
+.field-error:empty,
+.form-error:empty {
+    display: none;
+}
+
+.modal-text {
+    margin: -8px 0 20px;
+    color: var(--text-muted);
+}
+
+/* Usuário logado, no cabeçalho */
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    min-width: 0;
+}
+
+.user-name {
+    margin-right: 4px;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-area .link-btn {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 /* ---------- Aviso (toast) ---------- */
 
 .toast {
@@ -762,6 +941,27 @@ select:focus {
 
     .container {
         padding-top: 28px;
+    }
+
+    /* No celular, a área do usuário desce para uma linha própria, abaixo da logo e do botão. */
+    .app-header-inner {
+        flex-wrap: wrap;
+        row-gap: 4px;
+        padding-bottom: 8px;
+    }
+
+    .user-area {
+        order: 3;
+        width: 100%;
+        margin-left: 0;
+        margin-right: -4px;
+        justify-content: flex-end;
+        padding-top: 4px;
+        border-top: 1px solid var(--border);
+    }
+
+    .auth-panel {
+        padding: 28px 20px 24px;
     }
 
     .stats {

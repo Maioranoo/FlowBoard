@@ -9,7 +9,11 @@ import com.flowboard.backend.model.TaskStatus;
 import com.flowboard.backend.ratelimit.RateLimiter;
 import com.flowboard.backend.service.TaskParseService;
 import com.flowboard.backend.service.TaskService;
+import com.flowboard.backend.security.SecurityTestSupport;
+import com.flowboard.backend.security.TestAuth;
+import com.flowboard.backend.user.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,6 +27,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -32,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Contrato HTTP de criação: validação (400 com mensagens por campo) e formato da resposta. */
 @WebMvcTest(TaskController.class)
+@Import(SecurityTestSupport.class)
 class TaskControllerValidationTest {
 
     @Autowired
@@ -41,8 +47,10 @@ class TaskControllerValidationTest {
     private TaskService taskService;
     @MockitoBean
     private TaskParseService taskParseService;
-    @MockitoBean
+    @MockitoBean(name = "parseRateLimiter") // o TaskController pede este bean pelo nome
     private RateLimiter rateLimiter;
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void createReturnsSameJsonShapeAsBefore() throws Exception {
@@ -57,9 +65,9 @@ class TaskControllerValidationTest {
         saved.setSuggestionSource(SuggestionSource.GENERATING);
         saved.setCreatedAt(LocalDateTime.of(2026, 11, 6, 10, 0));
         saved.setUpdatedAt(LocalDateTime.of(2026, 11, 6, 10, 0));
-        when(taskService.createTask(any())).thenReturn(saved);
+        when(taskService.createTask(eq(1L), any())).thenReturn(saved);
 
-        mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/tasks").with(TestAuth.as(1L, "ana", false)).contentType(MediaType.APPLICATION_JSON).content("""
                         {"title": "Estudar AVL", "description": "", "priority": "HIGH",
                          "category": "STUDY", "dueDate": "2026-11-12"}"""))
                 .andExpect(status().isOk())
@@ -75,22 +83,22 @@ class TaskControllerValidationTest {
     void clientCannotSetIdOrStatus() throws Exception {
         Task saved = new Task();
         saved.setId(1L);
-        when(taskService.createTask(any())).thenReturn(saved);
+        when(taskService.createTask(eq(1L), any())).thenReturn(saved);
 
-        mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/tasks").with(TestAuth.as(1L, "ana", false)).contentType(MediaType.APPLICATION_JSON).content("""
                         {"id": 5, "status": "COMPLETED", "suggestion": "hack",
                          "title": "Nova", "priority": "LOW", "category": "HOME"}"""))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<TaskRequest> captor = ArgumentCaptor.forClass(TaskRequest.class);
-        verify(taskService).createTask(captor.capture());
+        verify(taskService).createTask(eq(1L), captor.capture());
         // O DTO nem tem campos para id/status/suggestion: não há como eles chegarem ao serviço.
         assertThat(captor.getValue().title()).isEqualTo("Nova");
     }
 
     @Test
     void returnsEveryInvalidFieldWithItsMessage() throws Exception {
-        mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/tasks").with(TestAuth.as(1L, "ana", false)).contentType(MediaType.APPLICATION_JSON).content("""
                         {"title": "  ", "description": "%s"}""".formatted("x".repeat(300))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Dados inválidos"))
@@ -103,8 +111,18 @@ class TaskControllerValidationTest {
     }
 
     @Test
-    void explainsWhichEnumValuesAreAccepted() throws Exception {
+    void createWithoutAuthIs401() throws Exception {
         mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"title": "x", "priority": "LOW", "category": "WORK"}"""))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Não autenticado"));
+
+        verifyNoInteractions(taskService);
+    }
+
+    @Test
+    void explainsWhichEnumValuesAreAccepted() throws Exception {
+        mvc.perform(post("/tasks").with(TestAuth.as(1L, "ana", false)).contentType(MediaType.APPLICATION_JSON).content("""
                         {"title": "x", "priority": "URGENTE", "category": "WORK"}"""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(containsString("'priority'")))

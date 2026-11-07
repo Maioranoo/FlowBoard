@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.concurrent.Executor;
 
@@ -102,6 +103,30 @@ public class AiConfig {
                                         @Value("${app.parse.rate-limit.global}") int global,
                                         Clock clock) {
         return new RateLimiter(perClient, global, clock);
+    }
+
+    // --- Limites das rotas de conta ---
+
+    /** Login, cadastro e upgrade: dificulta tentar adivinhar senhas em massa (10/min por IP). */
+    @Bean
+    public RateLimiter authRateLimiter(Clock clock) {
+        return new RateLimiter(10, 300, clock);
+    }
+
+    /**
+     * Visitantes cujas tarefas de exemplo recebem sugestões da IA (20/h por IP, 100/h no total).
+     * Passou disso, o visitante é criado do mesmo jeito, só que com sugestões das regras locais:
+     * o "Testar sem cadastro" nunca fica bloqueado por causa do custo da IA.
+     */
+    @Bean
+    public RateLimiter guestAiRateLimiter(Clock clock) {
+        return new RateLimiter(20, 100, Duration.ofHours(1), clock);
+    }
+
+    /** Contra abuso (ex.: um script criando visitantes sem parar). Este sim responde 429. */
+    @Bean
+    public RateLimiter guestAbuseRateLimiter(Clock clock) {
+        return new RateLimiter(60, 1_000, Duration.ofHours(1), clock);
     }
 
     /**

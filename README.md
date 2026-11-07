@@ -7,7 +7,7 @@ O projeto começou como desafio técnico para a XCL e evoluiu para um estudo de 
 - **Aplicação:** https://flow-board-lovat.vercel.app
 - **API (Swagger):** https://flowboard-backend-qnut.onrender.com/swagger-ui.html
 
-> O back-end roda no plano gratuito do Render, que desliga o servidor após um tempo sem uso. A primeira requisição pode levar cerca de 50 segundos; a interface avisa enquanto espera. As seguintes respondem normalmente.
+> Para testar sem criar conta, use **"Testar sem cadastro"**: você ganha um espaço só seu, com tarefas de exemplo.
 
 ---
 
@@ -16,6 +16,7 @@ O projeto começou como desafio técnico para a XCL e evoluiu para um estudo de 
 - **Criar tarefa a partir de texto livre.** "estudar árvores AVL pra prova de estrutura de dados quinta, urgente" vira título, categoria `Estudos`, prioridade `Alta` e prazo na próxima quinta. Os campos são preenchidos para revisão; nada é salvo sem o usuário confirmar.
 - **Sugestão de próximos passos.** Ao salvar, a tarefa recebe uma dica curta, subtarefas e uma prioridade/categoria sugeridas. A interface mostra se a sugestão veio da **IA** ou das **regras**.
 - **CRUD completo**, com conclusão/reabertura, filtros por status, prazo com destaque de atraso e um resumo do progresso.
+- **Contas e modo visitante.** Cada pessoa vê só as próprias tarefas. Dá para criar conta com usuário e senha, ou entrar com um clique como visitante, que depois pode virar conta sem perder nada.
 
 ## Arquitetura
 
@@ -31,7 +32,7 @@ flowchart LR
 | Camada | Tecnologias |
 |---|---|
 | Front-end | HTML, CSS e JavaScript puros, Lucide Icons |
-| API | Java 17, Spring Boot 3.5, Spring Data JPA, Bean Validation, springdoc-openapi |
+| API | Java 17, Spring Boot 3.5, Spring Data JPA, Spring Security (JWT), Bean Validation, springdoc-openapi |
 | Banco | PostgreSQL, migrações com Flyway |
 | IA | API de Mensagens da Anthropic via `RestClient`, com structured outputs (JSON Schema) |
 | Testes | JUnit 5, Mockito, MockMvc, Testcontainers |
@@ -39,17 +40,32 @@ flowchart LR
 
 ### Endpoints
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/tasks` | Lista as tarefas |
-| `GET` | `/tasks/{id}` | Busca uma tarefa |
-| `POST` | `/tasks` | Cria uma tarefa (a sugestão é gerada depois, em segundo plano) |
-| `PUT` | `/tasks/{id}` | Atualiza uma tarefa |
-| `PATCH` | `/tasks/{id}/toggle-status` | Alterna entre pendente e concluída |
-| `DELETE` | `/tasks/{id}` | Exclui uma tarefa |
-| `POST` | `/tasks/parse` | Converte texto livre em um rascunho de tarefa (não salva) |
+| Método | Rota | Login | Descrição |
+|---|---|---|---|
+| `POST` | `/auth/register` | não | Cria uma conta e devolve o token |
+| `POST` | `/auth/login` | não | Entra com usuário e senha |
+| `POST` | `/auth/guest` | não | Cria um visitante com 3 tarefas de exemplo |
+| `POST` | `/auth/upgrade` | sim | Transforma o visitante em conta, mantendo as tarefas |
+| `GET` | `/auth/me` | sim | Diz quem está logado |
+| `GET` | `/tasks` | sim | Lista as tarefas do usuário |
+| `GET` | `/tasks/{id}` | sim | Busca uma tarefa |
+| `POST` | `/tasks` | sim | Cria uma tarefa (a sugestão é gerada depois, em segundo plano) |
+| `PUT` | `/tasks/{id}` | sim | Atualiza uma tarefa |
+| `PATCH` | `/tasks/{id}/toggle-status` | sim | Alterna entre pendente e concluída |
+| `DELETE` | `/tasks/{id}` | sim | Exclui uma tarefa |
+| `POST` | `/tasks/parse` | sim | Converte texto livre em um rascunho de tarefa (não salva) |
+| `GET` | `/health` | não | Confirma que a API está no ar (não consulta o banco) |
 
-A documentação interativa fica em `/swagger-ui.html`.
+A documentação interativa fica em `/swagger-ui.html`. Para testar as rotas protegidas por lá, crie um visitante em `/auth/guest` e cole o token no botão **Authorize**.
+
+## Contas e autenticação
+
+- **Senhas** são guardadas com **BCrypt** (hash lento e com sal), nunca em texto. O limite é de 72 bytes, o máximo que o BCrypt considera; acima disso a API recusa em vez de cortar a senha em silêncio.
+- **Sessão sem estado no servidor:** o login devolve um **JWT** assinado com HMAC-SHA256 (chave na variável `JWT_SECRET`), que o front envia no cabeçalho `Authorization`. Usei cabeçalho em vez de cookie porque front e API ficam em domínios diferentes, e os navegadores vêm bloqueando cookies entre sites.
+- **Isolamento:** toda consulta de tarefa filtra pelo dono, que vem do token e nunca do corpo da requisição. Pedir a tarefa de outra pessoa responde `404`, igual a uma tarefa inexistente, para não revelar que ela existe.
+- **O token é conferido no banco a cada requisição.** Um JWT puro seria aceito até expirar; aqui uma leitura por chave primária também garante que o usuário ainda existe e que o token não foi invalidado. É o caso do token de visitante, que deixa de valer quando ele vira conta. Custa uma consulta por requisição, um preço aceitável neste volume.
+- **Login sem vazar informação:** a mensagem de erro é a mesma para usuário inexistente e para senha errada, e a senha é comparada com um hash falso mesmo quando o usuário não existe, para o tempo de resposta não denunciar quais nomes estão cadastrados.
+- **Visitantes:** um clique cria uma conta temporária com 3 tarefas de exemplo. Visitantes sem uso há 7 dias são apagados automaticamente, com as tarefas (`ON DELETE CASCADE`).
 
 ## Como a IA foi integrada
 
@@ -100,6 +116,12 @@ Detalhes que evitam bugs sutis:
 
 O `POST /tasks/parse` chama o modelo a cada uso. Para evitar abuso, há um limite de requisições em memória com duas camadas: **10 por minuto por IP** e **60 por minuto no total**. O limite global existe porque o IP vem de um cabeçalho que o cliente pode falsificar. Acima do limite, a API responde `429` com `Retry-After`.
 
+As sugestões têm dois tetos diários: **30 por usuário** e **1.000 no total**. Acima deles, vêm das regras locais. O teto global existe porque cada visitante novo ganharia os seus 30; sem ele, criar visitantes em série multiplicaria o gasto. A contagem por usuário é feita num único `UPDATE` condicional no banco, então duas requisições simultâneas não conseguem passar do limite.
+
+Os limites por IP usam o IP informado pela Cloudflare, que fica na frente do Render, e não o início do `X-Forwarded-For`, que o próprio cliente pode inventar. Recusas não ocupam memória, e o limitador acompanha no máximo 10 mil clientes.
+
+A criação de visitantes também é limitada, mas sem bloquear quem só quer testar: acima de 20 visitantes por hora no mesmo IP, o visitante é criado normalmente e só as sugestões das tarefas de exemplo deixam de usar a IA. Quem bloqueia de fato (`429`) é o limite contra abuso, bem mais alto.
+
 O modelo é o `claude-haiku-5-5`, o mais rápido e barato da família, adequado para tarefas curtas de extração.
 
 ## Avaliação da IA
@@ -124,7 +146,7 @@ Respostas válidas da IA: 21/21. Latência: mediana de 946 ms, máxima de 2,5 s.
 - **Enums persistidos como texto** (`@Enumerated(STRING)`): reordenar um enum não corrompe dados.
 - **Flyway em vez de `ddl-auto=update`:** o esquema muda só por migrações versionadas. O Hibernate apenas valida se as entidades batem com o banco.
 - **CORS restrito:** só as origens da variável `ALLOWED_ORIGINS` podem chamar a API pelo navegador.
-- **Nenhum segredo no código:** senha do banco e chave da API vêm de variáveis de ambiente, e a chave nunca é impressa em log.
+- **Nenhum segredo no código:** senha do banco, chave da API e chave dos tokens vêm de variáveis de ambiente, e a chave da API nunca é impressa em log.
 - **XSS:** todo texto vindo do usuário ou da IA é escapado antes de entrar no HTML.
 
 ## Testes
@@ -134,9 +156,9 @@ cd backend
 ./mvnw test
 ```
 
-- **Unidade:** serviços, parsers, fallback, rate limiter, conversão de respostas do modelo.
-- **Web (MockMvc):** validação, erros `400`/`429` e CORS.
-- **Integração (Testcontainers):** sobe um PostgreSQL real em Docker e aplica as migrações do Flyway. Precisa do Docker em execução.
+- **Unidade:** serviços, parsers, fallback, rate limiter, tokens JWT, conversão de respostas do modelo.
+- **Web (MockMvc):** validação, erros `400`/`401`/`429` e CORS, passando pela configuração de segurança real.
+- **Integração (Testcontainers):** sobe um PostgreSQL real em Docker e aplica as migrações do Flyway. Cobre o isolamento entre usuários (a tarefa de outra pessoa dá `404` em todas as rotas), cadastro, login, visitante, upgrade, tokens expirados ou invalidados, o orçamento de IA e a limpeza de visitantes. Precisa do Docker em execução.
 - **CI:** o GitHub Actions roda a suíte a cada push e pull request. Ele não tem a chave da API, então nunca chama o modelo.
 
 Para rodar a avaliação da IA (exige `ANTHROPIC_API_KEY` na máquina e consome alguns centavos):
@@ -157,6 +179,7 @@ O relatório é salvo em `backend/target/eval/parse-report.md`.
    | Variável | Obrigatória | Padrão |
    |---|---|---|
    | `DATABASE_PASSWORD` | sim | (vazia) |
+   | `JWT_SECRET` | sim | nenhum; sem ela (mínimo de 32 caracteres) a API não sobe |
    | `DATABASE_URL` | não | `jdbc:postgresql://localhost:5432/flowboard_db` |
    | `DATABASE_USERNAME` | não | `postgres` |
    | `ANTHROPIC_API_KEY` | não | sem chave, tudo funciona com as regras locais |
@@ -171,7 +194,7 @@ O relatório é salvo em `backend/target/eval/parse-report.md`.
 
    Ela fica em `http://localhost:8080`, com o Swagger em `http://localhost:8080/swagger-ui.html`.
 
-4. Abra o `frontend/index.html` com o Live Server do VS Code (porta 5500). O front aponta para a API publicada; para usar a API local, troque o `API_URL` em [`frontend/js/api.js`](frontend/js/api.js) para `http://localhost:8080/tasks`.
+4. Abra o `frontend/index.html` com o Live Server do VS Code (porta 5500). O front aponta para a API publicada; para usar a API local, troque o `API_BASE` em [`frontend/js/api.js`](frontend/js/api.js) para `http://localhost:8080`.
 
 ## Estrutura
 
@@ -181,15 +204,19 @@ FlowBoard
 │   └── src
 │       ├── main
 │       │   ├── java/com/flowboard/backend
-│       │   │   ├── ai           # cliente da Anthropic, prompts, fallback e regras
+│       │   │   ├── ai           # cliente da Anthropic, prompts, fallback, regras e orçamento
+│       │   │   ├── auth         # cadastro, login, visitante e limpeza de visitantes
 │       │   │   ├── config       # CORS e OpenAPI
-│       │   │   ├── controller   # rotas REST
+│       │   │   ├── controller   # rotas de tarefas
 │       │   │   ├── dto          # contrato da API
 │       │   │   ├── exception    # tratamento global de erros
 │       │   │   ├── model        # entidade e enums
 │       │   │   ├── ratelimit    # limite de requisições
 │       │   │   ├── repository
-│       │   │   └── service
+│       │   │   ├── security     # JWT e regras de acesso
+│       │   │   ├── service
+│       │   │   ├── user         # entidade e repositório de usuários
+│       │   │   └── web          # health check e IP do cliente
 │       │   └── resources
 │       │       ├── db/migration # migrações do Flyway
 │       │       └── prompts      # prompts do sistema
@@ -203,8 +230,10 @@ FlowBoard
 
 ## Limitações conhecidas
 
-- **Partida a frio de cerca de 50 s** no plano gratuito do Render.
-- **Sem autenticação:** todas as tarefas são compartilhadas. Por isso também não há dados pessoais.
+- **Partida a frio:** o plano gratuito do Render desliga o servidor após 15 minutos sem requisições, e religá-lo leva quase 1 minuto. Um monitor externo chama `/health` a cada 10 minutos para evitar isso. A rota não consulta o banco, então o Neon continua podendo dormir. Mesmo assim, o Render pode reiniciar o serviço quando quiser, e a interface avisa se a espera acontecer.
+- **Sem recuperação de senha:** não há e-mail no cadastro, por decisão de escopo.
+- **Sem revogação imediata de tokens de conta:** sair apaga o token só no navegador. Um token copiado continua valendo até expirar (7 dias).
+- **Token no `localStorage`:** um script malicioso na página conseguiria lê-lo. O risco é mitigado escapando todo texto antes de inserir no HTML.
 - **Rate limit em memória:** suficiente para uma instância; com várias, os contadores precisariam ficar num armazenamento compartilhado (ex.: Redis).
 - **A sugestão é consultada por polling.** Server-Sent Events evitariam as consultas repetidas, mas o polling é mais simples e suficiente no volume atual.
 - **O Swagger fica aberto em produção** de propósito, para facilitar a avaliação do projeto.

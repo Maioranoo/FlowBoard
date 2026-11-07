@@ -28,6 +28,58 @@
 </head>
 <body>
 
+    <!-- Tela de entrada: aparece quando não há sessão. O destaque é "Testar sem cadastro". -->
+    <main id="auth-view" class="auth-view" hidden>
+        <section class="auth-panel" aria-labelledby="auth-heading">
+            <h1 id="auth-heading" class="auth-logo">
+                <img src="assets/brand/flowboard-logo.svg" alt="FlowBoard" width="118" height="25">
+            </h1>
+            <p class="auth-intro">Descreva uma tarefa com suas palavras e a IA preenche os campos e sugere os próximos passos.</p>
+
+            <p id="auth-notice" class="auth-notice" role="status" hidden></p>
+
+            <div id="auth-choice" class="auth-choice">
+                <button type="button" id="guest-btn" class="primary-btn auth-wide">Testar sem cadastro</button>
+                <p class="auth-caption">Cria um espaço só seu, com tarefas de exemplo.</p>
+
+                <div class="auth-divider"><span>já tem conta?</span></div>
+
+                <button type="button" id="show-login-btn" class="secondary-btn auth-wide">Entrar</button>
+                <button type="button" id="show-register-btn" class="link-btn auth-link">Criar conta</button>
+            </div>
+
+            <form id="auth-form" class="auth-form" hidden novalidate>
+                <h2 id="auth-form-title">Entrar na sua conta</h2>
+
+                <label for="auth-username">Usuário</label>
+                <input type="text" id="auth-username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="40">
+                <p id="auth-username-error" class="field-error"></p>
+
+                <label for="auth-password">Senha</label>
+                <input type="password" id="auth-password" autocomplete="current-password" maxlength="100">
+                <p id="auth-password-error" class="field-error"></p>
+
+                <div id="auth-confirm-field" class="field" hidden>
+                    <label for="auth-confirm">Confirmar senha</label>
+                    <input type="password" id="auth-confirm" autocomplete="new-password" maxlength="100">
+                    <p id="auth-confirm-error" class="field-error"></p>
+                </div>
+
+                <p id="auth-error" class="form-error" role="alert"></p>
+
+                <button type="submit" id="auth-submit" class="primary-btn auth-wide">Entrar</button>
+                <button type="button" id="auth-switch" class="link-btn auth-link">Não tem conta? Criar conta</button>
+                <button type="button" id="auth-back" class="link-btn auth-link">Voltar</button>
+            </form>
+
+            <p id="auth-slow-hint" class="auth-caption" hidden>
+                O servidor gratuito estava em repouso. A primeira resposta pode levar até 1 minuto.
+            </p>
+        </section>
+    </main>
+
+    <div id="app-view" hidden>
+
     <header class="app-header">
         <div class="app-header-inner">
             <div class="brand">
@@ -39,6 +91,12 @@
                     </picture>
                 </h1>
                 <p class="brand-tagline">Transforme tarefas em resultados.</p>
+            </div>
+
+            <div class="user-area">
+                <span id="user-name" class="user-name"></span>
+                <button type="button" id="upgrade-btn" class="link-btn" hidden>Criar conta para salvar</button>
+                <button type="button" id="logout-btn" class="link-btn link-btn-muted">Sair</button>
             </div>
 
             <button id="open-modal-btn" class="primary-btn">
@@ -102,6 +160,8 @@
         </section>
 
     </main>
+
+    </div><!-- /#app-view -->
 
     <div id="task-modal" class="modal-overlay">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
@@ -169,6 +229,48 @@
         </div>
     </div>
 
+    <!-- Visitante vira conta: mesmas tarefas, agora com usuário e senha. -->
+    <div id="upgrade-modal" class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-modal-title">
+            <h2 id="upgrade-modal-title">Criar conta</h2>
+            <p class="modal-text">Suas tarefas de visitante passam para a nova conta.</p>
+
+            <form id="upgrade-form" novalidate>
+                <label for="upgrade-username">Usuário</label>
+                <input type="text" id="upgrade-username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="40">
+                <p id="upgrade-username-error" class="field-error"></p>
+
+                <label for="upgrade-password">Senha</label>
+                <input type="password" id="upgrade-password" autocomplete="new-password" maxlength="100">
+                <p id="upgrade-password-error" class="field-error"></p>
+
+                <label for="upgrade-confirm">Confirmar senha</label>
+                <input type="password" id="upgrade-confirm" autocomplete="new-password" maxlength="100">
+                <p id="upgrade-confirm-error" class="field-error"></p>
+
+                <p id="upgrade-error" class="form-error" role="alert"></p>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-upgrade-btn" class="secondary-btn">Cancelar</button>
+                    <button type="submit" id="upgrade-submit" class="primary-btn">Criar conta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="logout-guest-modal" class="modal-overlay">
+        <div class="modal delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="logout-guest-title">
+            <h2 id="logout-guest-title">Sair do modo visitante?</h2>
+            <p>Você perde o acesso a estas tarefas. Para mantê-las, crie uma conta antes de sair.</p>
+
+            <div class="modal-actions">
+                <button type="button" id="cancel-logout-btn" class="secondary-btn">Cancelar</button>
+                <button type="button" id="logout-to-upgrade-btn" class="secondary-btn">Criar conta</button>
+                <button type="button" id="confirm-logout-btn" class="danger-btn">Sair</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="js/api.js"></script>
@@ -176,6 +278,7 @@
     <script src="js/summary.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/script.js"></script>
+    <script src="js/auth.js"></script>
 
     <script>
         lucide.createIcons();

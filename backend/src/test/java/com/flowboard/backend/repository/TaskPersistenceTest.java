@@ -6,6 +6,8 @@ import com.flowboard.backend.model.Priority;
 import com.flowboard.backend.model.SuggestionSource;
 import com.flowboard.backend.model.Task;
 import com.flowboard.backend.model.TaskStatus;
+import com.flowboard.backend.user.User;
+import com.flowboard.backend.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +40,25 @@ class TaskPersistenceTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private UserRepository users;
+
+    /** Desde a migração V3, toda tarefa precisa de um dono. */
+    private User owner() {
+        Instant now = Instant.parse("2026-11-07T12:00:00Z");
+        User user = new User();
+        user.setUsername("ana");
+        user.setPasswordHash("$2a$10$hash-de-teste");
+        user.setCreatedAt(now);
+        user.setLastSeenAt(now);
+        user.setTokensValidAfter(now);
+        return users.saveAndFlush(user);
+    }
+
     @Test
     void enumsAreStoredAsTheirNamesNotNumbers() {
         Task task = new Task();
+        task.setOwner(owner());
         task.setTitle("Estudar AVL");
         task.setStatus(TaskStatus.PENDING);
         task.setPriority(Priority.HIGH);
@@ -63,8 +82,8 @@ class TaskPersistenceTest {
     /** Uma linha gravada ANTES da Fase 3 (strings, sem as colunas novas) continua sendo lida normalmente. */
     @Test
     void readsRowsWrittenBeforeTheEnumMigration() {
-        jdbc.update("insert into tasks (title, description, status, priority, category) values (?, ?, ?, ?, ?)",
-                "Tarefa antiga", "criada na versão anterior", "COMPLETED", "LOW", "WORK");
+        jdbc.update("insert into tasks (title, description, status, priority, category, user_id) values (?, ?, ?, ?, ?, ?)",
+                "Tarefa antiga", "criada na versão anterior", "COMPLETED", "LOW", "WORK", owner().getId());
         Long id = jdbc.queryForObject("select id from tasks where title = 'Tarefa antiga'", Long.class);
         entityManager.clear(); // garante que a leitura vem do banco, não do cache do JPA
 

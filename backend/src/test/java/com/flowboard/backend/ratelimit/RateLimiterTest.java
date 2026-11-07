@@ -67,4 +67,51 @@ class RateLimiterTest {
                 .satisfies(e -> org.assertj.core.api.Assertions
                         .assertThat(((RateLimitExceededException) e).getRetryAfterSeconds()).isBetween(1L, 60L));
     }
+
+    @Test
+    void tryAcquireReturnsFalseInsteadOfThrowing() {
+        RateLimiter limiter = new RateLimiter(1, 100, clock);
+
+        org.assertj.core.api.Assertions.assertThat(limiter.tryAcquire("a")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(limiter.tryAcquire("a")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(limiter.tryAcquire("b")).isTrue();
+    }
+
+    @Test
+    void rejectedRequestsFromNewClientsAreNotTracked() {
+        RateLimiter limiter = new RateLimiter(5, 1, clock);
+        limiter.acquire("a"); // gasta o limite global
+
+        // Sem isto, cada IP inventado num ataque ocuparia memória mesmo sendo recusado.
+        for (int i = 0; i < 1_000; i++) {
+            org.assertj.core.api.Assertions.assertThat(limiter.tryAcquire("forjado-" + i)).isFalse();
+        }
+        org.assertj.core.api.Assertions.assertThat(limiter.trackedClients()).isEqualTo(1);
+    }
+
+    @Test
+    void trackedClientsAreCappedEvenWithinTheWindow() {
+        RateLimiter limiter = new RateLimiter(5, 1_000_000, clock);
+
+        for (int i = 0; i < RateLimiter.MAX_TRACKED_CLIENTS + 500; i++) {
+            limiter.acquire("cliente-" + i);
+        }
+        org.assertj.core.api.Assertions.assertThat(limiter.trackedClients())
+                .isLessThanOrEqualTo(RateLimiter.MAX_TRACKED_CLIENTS);
+    }
+
+    @Test
+    void customWindowResetsAfterOneHour() {
+        RateLimiter limiter = new RateLimiter(1, 100, Duration.ofHours(1), clock);
+
+        limiter.acquire("a");
+        clock.advance(Duration.ofMinutes(59));
+        assertThatThrownBy(() -> limiter.acquire("a"))
+                .isInstanceOf(RateLimitExceededException.class)
+                .satisfies(e -> org.assertj.core.api.Assertions
+                        .assertThat(((RateLimitExceededException) e).getRetryAfterSeconds()).isBetween(1L, 60L));
+
+        clock.advance(Duration.ofMinutes(1));
+        limiter.acquire("a"); // nova janela: não lança
+    }
 }
