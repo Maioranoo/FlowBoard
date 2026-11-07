@@ -211,4 +211,4 @@ FlowBoard
 
 ## Autor
 
-João Pedro Maiorano · [github.com/Maioranoo](https://github.com/Maioranoo)
+João Pedro Maiorano · [GitHub](https://github.com/Maioranoo) · [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-pedro-maiorano-28a10a3b8/)
