@@ -9,6 +9,14 @@ O projeto começou como desafio técnico para a XCL e evoluiu para um estudo de 
 
 > Para testar sem criar conta, use **"Testar sem cadastro"**: você ganha um espaço só seu, com tarefas de exemplo.
 
+<p align="center">
+  <img src="docs/images/flowboard-app.png" alt="FlowBoard: lista de tarefas com sugestões geradas por IA">
+</p>
+
+<p align="center">
+  <img src="docs/images/flowboard-mobile.png" width="260" alt="FlowBoard no celular">
+</p>
+
 ---
 
 ## O que ele faz
