@@ -115,7 +115,7 @@ Uma avaliação ([`ParseEvaluationTest`](backend/src/test/java/com/flowboard/bac
 
 Respostas válidas da IA: 21/21. Latência: mediana de 946 ms, máxima de 2,5 s.
 
-**Limites desta medida:** são poucas frases, escritas por mim, e não um conjunto representativo de uso real; 100% aqui não significa que o modelo não erra. O valor da avaliação está em comparar com as regras e em detectar regressões quando o prompt ou o modelo mudam. Por depender de rede e custar créditos, ela fica fora do `mvn test` e do CI e só roda sob demanda.
+**Limites desta medida:** são poucas frases, escritas durante o desenvolvimento e não coletadas de usuários reais, então não formam um conjunto representativo de uso; 100% aqui não significa que o modelo não erra. O valor da avaliação está em comparar com as regras e em detectar regressões quando o prompt ou o modelo mudam. Por depender de rede e custar créditos, ela fica fora do `mvn test` e do CI e só roda sob demanda.
 
 ## Decisões de engenharia
 
