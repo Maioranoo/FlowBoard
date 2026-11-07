@@ -114,25 +114,29 @@ svg.lucide {
 .brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    min-width: 0;
 }
 
-.brand-mark {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    background: var(--accent);
+.brand-logo {
+    display: flex;
+    flex-shrink: 0;
+    line-height: 0;
 }
 
-.brand h1 {
-    font-size: 19px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+/* Altura fixa e largura automática: a proporção vem do próprio SVG (450 x 95). */
+.brand-logo img {
+    display: block;
+    width: auto;
+    height: 25px;
 }
 
-.brand p {
+.brand-tagline {
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
     font-size: 13px;
     color: var(--text-muted);
+    white-space: nowrap;
 }
 
 /* ---------- Botões ---------- */
@@ -719,6 +723,19 @@ select:focus {
 
 /* ---------- Telas menores ---------- */
 
+@media (max-width: 720px) {
+    .brand-tagline {
+        display: none;
+    }
+}
+
+/* Abaixo de 320 px (ex.: Galaxy Fold fechado) a logo horizontal não cabe ao lado do botão: só o isotipo. */
+@media (max-width: 319px) {
+    .brand-logo img {
+        height: 28px;
+    }
+}
+
 @media (max-width: 860px) {
     .overview {
         grid-template-columns: 1fr;
@@ -742,9 +759,6 @@ select:focus {
         width: calc(100% - 32px);
     }
 
-    .brand p {
-        display: none;
-    }
 
     .container {
         padding-top: 28px;
@@ -772,6 +786,8 @@ select:focus {
 
     .filter-btn {
         flex: 1;
+        min-width: 0;
+        padding: 0 8px;
     }
 
     .task-card {

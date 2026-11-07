@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowBoard</title>
-    <meta name="description" content="Gerenciador de tarefas com sugestões geradas por IA.">
+    <title>FlowBoard · Tarefas com sugestões de IA</title>
+    <meta name="description" content="FlowBoard: gerenciador de tarefas que cria tarefas a partir de texto livre e sugere prioridade, categoria e próximos passos com IA.">
     <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#17181b">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FlowBoard">
+    <meta property="og:title" content="FlowBoard · Tarefas com sugestões de IA">
+    <meta property="og:description" content="Gerenciador de tarefas que cria tarefas a partir de texto livre e sugere prioridade, categoria e próximos passos com IA.">
+
+    <!-- Ícones: SVG para navegadores modernos, ICO (16–64 px) como reserva, PNG 180 px para iOS -->
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,11 +31,14 @@
     <header class="app-header">
         <div class="app-header-inner">
             <div class="brand">
-                <span class="brand-mark" aria-hidden="true"></span>
-                <div>
-                    <h1>FlowBoard</h1>
-                    <p>Transforme tarefas em resultados.</p>
-                </div>
+                <!-- Logo horizontal; em telas estreitas, só o isotipo. O alt dá nome ao h1 da página. -->
+                <h1 class="brand-logo">
+                    <picture>
+                        <source media="(max-width: 319px)" srcset="assets/brand/flowboard-icon.svg" width="28" height="28">
+                        <img src="assets/brand/flowboard-logo.svg" alt="FlowBoard" width="118" height="25">
+                    </picture>
+                </h1>
+                <p class="brand-tagline">Transforme tarefas em resultados.</p>
             </div>
 
             <button id="open-modal-btn" class="primary-btn">
